@@ -2,7 +2,6 @@ import React, { useState, useRef } from "react";
 import { Button } from "../ui/button";
 import { X, ZoomIn, ZoomOut, Maximize2, Check } from "lucide-react";
 import { ProfileImageData } from "../../types/business-card";
-const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 import svgPaths from "../../imports/svg-ryed6k4ibx";
 
 interface FullScreenImagePositionerProps {
@@ -107,15 +106,17 @@ export function FullScreenImagePositioner({
         <div className="absolute bottom-0 left-0 right-0 top-0" data-name="img">
           <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
             <div className="absolute inset-0">
-              <img 
-                alt="" 
-                className="absolute h-full w-full object-contain pointer-events-none" 
-                src={imageUrl || imgImg}
-                style={{
-                  transform: `translate(${position.x}px, ${position.y}px) scale(${position.scale})`,
-                  transformOrigin: 'center center'
-                }}
-              />
+              {imageUrl && (
+                <img 
+                  alt="" 
+                  className="absolute h-full w-full object-contain pointer-events-none" 
+                  src={imageUrl}
+                  style={{
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${position.scale})`,
+                    transformOrigin: 'center center'
+                  }}
+                />
+              )}
             </div>
             <div className="absolute left-0 right-0 bottom-0 h-[550px] bg-gradient-to-b from-transparent to-[#c96442] pointer-events-none" />
           </div>

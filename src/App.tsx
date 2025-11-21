@@ -14,7 +14,6 @@ declare global {
   }
 }
 import svgPaths from "./imports/svg-ryed6k4ibx";
-const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 import Contact from "./imports/Contact";
 import contactSvgPaths from "./imports/svg-1txqd1yzsg";
 import profileSvgPaths from "./imports/svg-i5dwj49pkv";
@@ -28,7 +27,7 @@ import { BusinessCardStudio } from "./components/cms/BusinessCardStudio";
 import { loadBusinessCardData, userExists, ensureDefaultUserExists } from "./utils/storage";
 import { loadFilteredBusinessCardData } from "./utils/filtered-data-loader";
 import { BusinessCardData, messagingUrlPatterns, socialChannelUrlPatterns, PortfolioCategory, PortfolioItem } from "./types/business-card";
-import { parseProfileImage } from "./utils/profile-image-utils";
+import { parseProfileImage, calculateAvatarScaleFactor } from "./utils/profile-image-utils";
 import { calculateBackgroundImagePosition } from "./utils/home-background-positioning";
 import "./utils/openai-test"; // Load OpenAI test utility for console testing
 import "./utils/openai-debug"; // Load OpenAI debug utility for console testing
@@ -53,26 +52,28 @@ import { trackPageView } from "./utils/analytics";
 function HomeBackgroundImage() {
   const data = useFilteredBusinessCardData();
 
-  // Parse profile image data
+  // Parse profile image data - only use user-uploaded image, no static fallback
   const profileImageData = parseProfileImage(data?.personal.profileImage || '');
-  const imageUrl = profileImageData?.imageUrl || imgImg;
+  const imageUrl = profileImageData?.imageUrl || '';
   const bgPosition = calculateBackgroundImagePosition(profileImageData);
 
   return (
     <div className="relative shrink-0 w-full overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }} data-name="home-background-image">
       <div className="absolute bottom-0 left-0 right-0 top-0" data-name="img">
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0">
-            <img 
-              alt="" 
-              className="absolute h-full w-full object-contain" 
-              src={imageUrl}
-              style={{
-                transform: bgPosition.transform,
-                transformOrigin: bgPosition.transformOrigin
-              }}
-            />
-          </div>
+          {imageUrl && (
+            <div className="absolute inset-0">
+              <img 
+                alt="" 
+                className="absolute h-full w-full object-contain" 
+                src={imageUrl}
+                style={{
+                  transform: bgPosition.transform,
+                  transformOrigin: bgPosition.transformOrigin
+                }}
+              />
+            </div>
+          )}
           <div className="absolute left-0 right-0 bottom-0 bg-gradient-to-b from-transparent to-[#c96442]" style={{ height: 'min(550px, calc(var(--vh, 1vh) * 70))' }} />
         </div>
       </div>
@@ -229,12 +230,22 @@ function Container({ onNavigateToContact, name, title, businessName, cardHeight,
           </svg>
         </div>
       </button>
-      <div className="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] min-w-full not-italic relative shrink-0 text-slate-50 tracking-[-0.576px] w-[min-content]">
+      <div 
+        className="flex flex-col font-['Inter:Bold',sans-serif] font-bold justify-center leading-[0] min-w-0 not-italic relative shrink-0 text-slate-50 tracking-[-0.576px] w-full"
+        style={{
+          maxWidth: `${cardWidth - 48}px` // Constrain to card width minus padding (24px each side)
+        }}
+      >
         <p 
           className="leading-[1.17]"
           style={{
             fontSize: `${fontSize}px`,
-            ...(nameLines === 1 ? { whiteSpace: 'nowrap' } : {
+            ...(nameLines === 1 ? { 
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%'
+            } : {
               display: '-webkit-box',
               WebkitLineClamp: nameLines,
               WebkitBoxOrient: 'vertical',
@@ -1045,15 +1056,15 @@ function HomeProfileCard({ onNavigateToContact, onNavigateToProfile, onNavigateT
   }
 
   return (
-    <div ref={cardRef} className="backdrop-blur-lg backdrop-filter bg-[rgba(255,222,207,0.33)] box-border content-stretch flex flex-col items-center justify-between mb-[16px] rounded-[24px] w-full" style={{ height: 'calc(var(--vh, 1vh) * 50)', paddingTop: '16px', paddingBottom: '24px', paddingLeft: '24px', paddingRight: '24px' }} data-name="home-profile-card">
+    <div ref={cardRef} className="backdrop-blur-lg backdrop-filter bg-[rgba(255,222,207,0.33)] box-border content-stretch flex flex-col items-center justify-between mb-[16px] rounded-[24px] w-full relative" style={{ height: 'calc(var(--vh, 1vh) * 50)', paddingTop: '16px', paddingBottom: '24px', paddingLeft: '24px', paddingRight: '24px' }} data-name="home-profile-card">
       <Container 
-        onNavigateToContact={onNavigateToContact}
-        name={data.personal.name}
-        title={data.personal.title}
-        businessName={data.personal.businessName}
-        cardHeight={cardHeight}
-        cardWidth={cardWidth}
-      />
+          onNavigateToContact={onNavigateToContact}
+          name={data.personal.name}
+          title={data.personal.title}
+          businessName={data.personal.businessName}
+          cardHeight={cardHeight}
+          cardWidth={cardWidth}
+        />
       {shouldShowBio && data.personal.bio && (
         <div className="content-stretch flex flex-col items-center relative rounded-[24px] shrink-0 w-full" style={{ gap: 'clamp(14px, calc(var(--vh, 1vh) * 2), 16px)' }} data-name="home-profile-description-text">
           <div className="flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center not-italic relative shrink-0 text-[14px] text-slate-50 w-full">
@@ -1429,36 +1440,40 @@ function Share({ onAIClick }: { onAIClick?: () => void }) {
 
   if (!data) return null;
 
-  // Parse avatar image data (separate from background)
-  const avatarImageData = parseProfileImage(data.personal.avatarImage || data.personal.profileImage); // Fallback to profileImage for backward compatibility
+  // Parse avatar image data (separate from background) - only use user-uploaded image, no static fallback
+  const avatarImageData = parseProfileImage(data.personal.avatarImage || '');
   const imageUrl = avatarImageData?.imageUrl || "";
   const avatarPosition = avatarImageData?.position || { x: 0, y: 0, scale: 1 };
 
   return (
     <div className="box-border content-stretch flex flex-col gap-[24px] items-center p-[24px] relative rounded-tl-[24px] rounded-tr-[24px] shrink-0 w-full" data-name="share">
-      <div className="relative rounded-[100px] shrink-0 size-[120px]" data-name="avatar">
-        <div className="overflow-clip relative rounded-[inherit] size-[120px]">
-          <div className="absolute inset-0 rounded-[100px]" data-name="img">
-            <div className="absolute overflow-hidden pointer-events-none rounded-[100px]" style={{
+      <div className="relative rounded-[100px] shrink-0 size-[120px] overflow-hidden" data-name="avatar">
+        {/* Viewport-sized container scaled to fit cropped area in 120px circle */}
+        {(() => {
+          const scaleFactor = calculateAvatarScaleFactor();
+          return (
+            <div className="absolute inset-0 overflow-hidden rounded-[100px]" style={{
               width: '100vw',
               height: '100vh',
               left: '50%',
               top: '50%',
-              transform: 'translate(-50%, -50%) scale(0.75)',
+              transform: `translate(-50%, -50%) scale(${scaleFactor})`,
               transformOrigin: 'center center'
             }}>
-              <img 
-                alt="Profile" 
-                className="absolute h-full w-full object-contain" 
-                src={imageUrl || imgImg}
-                style={{
-                  transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
-                  transformOrigin: 'center center'
-                }}
-              />
+              {imageUrl && (
+                <img 
+                  alt="Profile" 
+                  className="absolute h-full w-full object-contain" 
+                  src={imageUrl}
+                  style={{
+                    transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                    transformOrigin: 'center center'
+                  }}
+                />
+              )}
             </div>
-          </div>
-        </div>
+          );
+        })()}
         <div aria-hidden="true" className="absolute border-8 border-solid border-white inset-[-8px] pointer-events-none rounded-[108px]" />
       </div>
       <Headline name={data.personal.name} title={data.personal.title} />

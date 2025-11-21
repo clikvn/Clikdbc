@@ -4,6 +4,195 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed: HomeProfileAvatarCard Component from Home Page
+- **Date**: 2025-11-21
+- **Issue Fixed**: HomeProfileAvatarCard component no longer needed on Home page
+- **Changes**:
+  - Removed HomeProfileAvatarCard component wrapper
+  - Removed avatar display from Home page (HomeProfileCard)
+  - Removed padding wrapper around Container (no longer needed without avatar)
+  - Removed unused avatar-related variables from HomeProfileCard
+  - Avatar still displayed in Share component (unchanged)
+  - Cleaned up unused code
+- **Files Modified**:
+  - `src/App.tsx` - Removed HomeProfileAvatarCard component and its usage from HomeProfileCard
+- **Result**: Simplified Home page structure - avatar no longer displayed on Home page, but still available in Share component
+
+### Refactored: Avatar Component to HomeProfileAvatarCard + Prevent Overlap (REMOVED)
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar container needs proper name and should not overlap with Container (name/title)
+- **Changes**:
+  - Extracted avatar rendering into separate `HomeProfileAvatarCard` component
+  - Component name now properly identifies it as `HomeProfileAvatarCard` (data-name attribute)
+  - Added padding-top (60px) wrapper around Container when avatar exists to prevent overlap
+  - Avatar is 120px circle positioned at top border center (half above = 60px)
+  - Container wrapper adds 60px padding-top to ensure name doesn't overlap with avatar
+  - Cleaner separation of concerns with dedicated avatar component
+- **Files Modified**:
+  - `src/App.tsx` - Extracted avatar to HomeProfileAvatarCard component, added padding wrapper for Container
+- **Result**: Avatar component properly named and Container content no longer overlaps with avatar
+
+### Fixed: Name Text Overflow on Desktop
+- **Date**: 2025-11-21
+- **Issue Fixed**: Name text with large font size (60px) overflows container width on desktop
+- **Root Cause**: Container used `w-[min-content]` which allowed it to grow beyond card width, and `whiteSpace: 'nowrap'` prevented wrapping/truncation
+- **Changes**:
+  - Changed container from `w-[min-content]` to `w-full` with `maxWidth: cardWidth - 48px` constraint
+  - Changed `min-w-full` to `min-w-0` to allow proper truncation
+  - Added `overflow: hidden` and `textOverflow: 'ellipsis'` for single-line names
+  - Kept multi-line behavior for wrapped names (using WebkitLineClamp)
+  - Ensures name text respects card width and truncates with ellipsis when too long
+- **Files Modified**:
+  - `src/App.tsx` - Updated Container component name display to respect card width constraints
+- **Result**: Name text now properly constrained within card width and truncates with ellipsis when too long, preventing overflow on large desktop screens
+
+### Fixed: Home Profile Avatar Shows Full Cropped Image Scaled to 120px
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar should show the full cropped image area (not clipped) scaled to fit within 120px circle
+- **Changes**:
+  - Created `calculateCropCircleSize()` and `calculateAvatarScaleFactor()` helper functions
+  - Scale factor calculated as: 120px / cropCircleSize (responsive based on viewport)
+  - Viewport container now scaled by factor to fit cropped area in 120px circle
+  - Removed clipPath - using scale transform instead to show full cropped image
+  - Applied to HomeProfileCard, Share component, and HomeForm preview
+  - Mobile: Scale factor = 120 / (70% viewport, capped 250-350px)
+  - Desktop: Scale factor = 120 / (50% viewport)
+- **Files Modified**:
+  - `src/utils/profile-image-utils.ts` - Added crop circle size and scale factor calculation functions
+  - `src/App.tsx` - Updated HomeProfileCard and Share to scale viewport container
+  - `src/components/cms/forms/HomeForm.tsx` - Updated preview to scale viewport container
+- **Result**: Avatar now shows the complete cropped image area, scaled proportionally to fit perfectly within the 120px circle
+
+### Fixed: HomeForm Avatar Preview Now Matches HomeProfileCard
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar preview in HomeForm edit form didn't match HomeProfileCard display
+- **Root Cause**: HomeForm used different structure (w-32 h-32, object-cover) vs HomeProfileCard (viewport container, object-contain)
+- **Changes**:
+  - Updated HomeForm avatar preview to use same structure as HomeProfileCard
+  - Changed from 128px (w-32 h-32) to 120px to match HomeProfileCard
+  - Changed from object-cover to object-contain
+  - Added viewport-sized container (100vw x 100vh) with same transforms
+  - Updated border styling to match (border-white/30)
+  - All three views now identical: HomeForm preview, HomeProfileCard, and AvatarImagePositioner
+- **Files Modified**:
+  - `src/components/cms/forms/HomeForm.tsx` - Updated avatar preview structure to match HomeProfileCard
+- **Result**: Avatar preview in edit form now shows exactly what appears on Home page
+
+### Fixed: Home Page Avatar Now Reflects Positioner Crop
+- **Date**: 2025-11-21
+- **Issue Fixed**: Home page avatar structure didn't match what user positioned in AvatarImagePositioner
+- **Root Cause**: Home page used complex nested structure with scale(0.75), positioner used simple full-image structure
+- **Changes**:
+  - Simplified Home page avatar structure to match AvatarImagePositioner
+  - Removed nested scale(0.75) container from Home page avatar
+  - Positioner now uses simple full-image structure (no nested transforms)
+  - Home page avatar now directly applies position/scale transforms like positioner
+  - Updated both HomeProfileCard and Share components to use same structure
+  - Avatar now shows exactly what user positioned in the crop tool
+- **Files Modified**:
+  - `src/App.tsx` - Simplified avatar structure in HomeProfileCard and Share components
+  - `src/components/cms/AvatarImagePositioner.tsx` - Simplified to use direct image transforms
+- **Result**: Home page avatar now shows exactly what user sees and positions in the crop tool
+
+### Fixed: Avatar Position Not Matching After Save
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar image position saved in positioner didn't match what appeared on Home page
+- **Root Cause**: Positioner used different transform structure than Home page (Home page has nested scale(0.75) container)
+- **Changes**:
+  - Updated AvatarImagePositioner to match Home page structure exactly
+  - Added nested container with `scale(0.75)` to match Home page rendering
+  - Image transforms now applied in same context as Home page
+  - Position values saved from positioner now match Home page display
+- **Files Modified**:
+  - `src/components/cms/AvatarImagePositioner.tsx` - Updated image container structure to match Home page
+- **Result**: Avatar positioning now works correctly - what you see in the positioner matches what appears on Home page
+
+### Updated: AvatarImagePositioner - Simplified to Show Full Image with Crop Circle
+- **Date**: 2025-11-21
+- **Change**: Simplified avatar positioner to show full image as background with circular crop indicator
+- **Changes**:
+  - Removed Home Profile card structure (name, title, contact button)
+  - Shows full uploaded image as full-screen background
+  - Circular crop indicator (120px) shows what will be visible in the avatar
+  - Dark overlay outside the crop circle to highlight the crop area
+  - User can drag and zoom the image to position it within the crop circle
+  - Cleaner, more focused interface for image positioning
+- **Files Modified**:
+  - `src/components/cms/AvatarImagePositioner.tsx` - Simplified layout to show full image with crop circle
+- **Result**: Avatar positioner now works like a standard crop tool - shows full image with circular crop indicator
+
+### Created: AvatarImagePositioner Component
+- **Date**: 2025-11-21
+- **Feature**: Avatar positioning interface similar to background image positioner
+- **Changes**:
+  - Created complete `AvatarImagePositioner` component matching Home page avatar structure exactly
+  - Shows avatar in context of the Home Profile card for accurate preview
+  - Exact nested structure match from Home page:
+    - Avatar positioned at top border center (`top-0 left-1/2 -translate-x-1/2 -translate-y-1/2`)
+    - Size: `120px` circular
+    - White border: `border-4 border-white/30`
+    - Transform container with `scale(0.75)` applied
+    - Image transforms (translate + scale) for positioning
+  - Drag and zoom functionality for repositioning avatar image
+  - Zoom controls: In/Out buttons, Reset, Save & Close
+  - Visual feedback during dragging
+  - Shows profile card context (name, title, contact button) for accurate preview
+  - Available in both Home Profile view and Edit Home form
+- **Files Created**:
+  - `src/components/cms/AvatarImagePositioner.tsx` - Complete avatar positioning component
+- **Files Modified**:
+  - `src/components/cms/forms/HomeForm.tsx` - Added profileName and profileTitle props to AvatarImagePositioner
+- **Result**: Users can now position avatar images with live preview in the context of the Home Profile card
+
+### Fixed: Images Not Showing on Home Page After Upload
+- **Date**: 2025-11-21
+- **Issue Fixed**: Images uploaded in EDIT HOME form not showing on Home page
+- **Root Cause**: Visibility filtering was hiding images when viewing own profile
+- **Changes**:
+  - Fixed `loadFilteredBusinessCardData` to bypass visibility filtering when viewing own profile
+  - Added check using `isOwnProfile()` function to detect when user is viewing their own profile
+  - When viewing own profile (e.g., `/myclik`), all data is shown without filtering
+  - Visibility filtering now only applies when viewing shared links or other users' profiles
+  - Added debug logging to help diagnose image loading issues
+- **Files Modified**:
+  - `src/utils/filtered-data-loader.ts` - Added own profile check to bypass filtering
+  - `src/App.tsx` - Added debug logging for image data
+- **Result**: Images uploaded in EDIT HOME now correctly display on the Home page when viewing your own profile
+
+### Remove Static Image Fallbacks from Home Page
+- **Date**: 2025-11-21
+- **Issue Fixed**: Home page was loading static/default images instead of user-uploaded images
+- **Changes**:
+  - Removed all static image fallbacks from Home page components
+  - Background image now only displays if user has uploaded one (no default/static image)
+  - Avatar image now only displays if user has uploaded one (no default/static image)
+  - Removed `imgImg` static image constant from `App.tsx`
+  - Removed static image fallback from `FullScreenImagePositioner` component
+  - Images only render conditionally when user-uploaded image exists
+  - Background shows only gradient/color if no image uploaded
+  - Avatar section is hidden if no avatar image uploaded
+- **Files Modified**:
+  - `src/App.tsx` - Removed static image fallbacks from HomeBackgroundImage and Share components
+  - `src/components/cms/FullScreenImagePositioner.tsx` - Removed static image fallback
+- **Result**: Home page now only shows user-uploaded images, no static/default images
+
+### Avatar Image Display on Home Page - Fixed
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar image uploaded from Home form not showing on Home page
+- **Changes**:
+  - Fixed avatar data reading logic to properly prioritize `avatarImage` field
+  - Added proper fallback logic: only use `profileImage` if `avatarImage` is empty/undefined
+  - Added debug logging to help diagnose avatar loading issues
+  - Avatar positioned at the center of the top border of the profile card
+  - Uses absolute positioning with `top-0`, `left-1/2`, `-translate-x-1/2`, `-translate-y-1/2` to center on border
+  - Avatar center sits exactly on the top border edge (half above, half below)
+  - Avatar positioning (transform/scale) is applied correctly
+  - Only displays when an avatar image is available
+  - Consistent styling with avatar shown in Share component (120px circular with white border)
+- **Files Modified**:
+  - `src/App.tsx` - Fixed avatar data reading logic in HomeProfileCard component
+- **Result**: Avatar images uploaded from the Home form now correctly display on the Home page
+
 ### Build Fix - Vercel Deployment Error
 - **Date**: 2025-11-21
 - **Issue Fixed**: Build failed on Vercel with "terser not found" error

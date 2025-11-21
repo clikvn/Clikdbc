@@ -2,7 +2,7 @@ import { BusinessCardData } from '../types/business-card';
 import { ContactGroup } from '../types/contacts';
 import { loadBusinessCardData } from './storage';
 import { loadGroupShareSettings } from './group-share-settings';
-import { parseProfileUrl } from './user-code';
+import { parseProfileUrl, getUserCode, isOwnProfile } from './user-code';
 import { getGroupByShareCode, loadCustomGroups } from './custom-groups';
 
 /**
@@ -36,6 +36,13 @@ export function loadFilteredBusinessCardData(pathname: string = window.location.
   
   // Load data for the specific user
   const data = loadBusinessCardData(userCode || undefined);
+  
+  // Check if viewing own profile - if so, show all data without filtering
+  const viewingOwnProfile = isOwnProfile(pathname);
+  if (viewingOwnProfile) {
+    console.log('[FilteredData] Viewing own profile - showing all data without filtering');
+    return data; // Return unfiltered data when viewing your own profile
+  }
   
   // If no group specified in URL, use the first group from custom groups
   let groupId: ContactGroup | null = null;

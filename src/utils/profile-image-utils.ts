@@ -1,5 +1,29 @@
 import { ProfileImageData } from "../types/business-card";
 
+/**
+ * Calculate the crop circle size based on viewport (matches AvatarImagePositioner logic)
+ */
+export function calculateCropCircleSize(): number {
+  const viewportWidth = window.innerWidth;
+  const isMobile = viewportWidth < 768; // Tablet and below
+  
+  if (isMobile) {
+    // Mobile: Use 70% of viewport width, but cap between 250px and 350px
+    return Math.min(Math.max(viewportWidth * 0.7, 250), 350);
+  } else {
+    // Desktop: Use 50% of viewport width
+    return viewportWidth * 0.5;
+  }
+}
+
+/**
+ * Calculate scale factor to fit cropped area into 120px circle
+ */
+export function calculateAvatarScaleFactor(): number {
+  const cropCircleSize = calculateCropCircleSize();
+  return 120 / cropCircleSize;
+}
+
 export function parseProfileImage(value: string): ProfileImageData | null {
   if (!value) return null;
   

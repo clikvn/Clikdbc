@@ -10,7 +10,7 @@ import { Upload, Edit2, Trash2 } from "lucide-react";
 import { FullScreenImagePositioner } from "../FullScreenImagePositioner";
 import { AvatarImagePositioner } from "../AvatarImagePositioner";
 import { BusinessCardData, ProfileImageData } from "../../../types/business-card";
-import { parseProfileImage } from "../../../utils/profile-image-utils";
+import { parseProfileImage, calculateAvatarScaleFactor } from "../../../utils/profile-image-utils";
 const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 
 interface HomeFormProps {
@@ -297,19 +297,34 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
 
               {avatarImageUrl ? (
                 <div className="space-y-3">
-                  {/* Avatar Preview */}
-                  <div className="relative w-32 h-32 mx-auto bg-slate-100 rounded-full overflow-hidden border-4 border-white shadow-md">
-                    <div className="absolute inset-0 rounded-full overflow-hidden">
-                      <img
-                        src={avatarImageUrl}
-                        alt="Avatar preview"
-                        className="absolute h-full w-full object-cover"
-                        style={{
-                          transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                  {/* Avatar Preview - Matches HomeProfileCard structure exactly */}
+                  <div className="relative mx-auto rounded-[100px] shrink-0 size-[120px] overflow-hidden">
+                    {/* Viewport-sized container scaled to fit cropped area in 120px circle */}
+                    {(() => {
+                      const scaleFactor = calculateAvatarScaleFactor();
+                      return (
+                        <div className="absolute inset-0 overflow-hidden rounded-[100px]" style={{
+                          width: '100vw',
+                          height: '100vh',
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) scale(${scaleFactor})`,
                           transformOrigin: 'center center'
-                        }}
-                      />
-                    </div>
+                        }}>
+                          <img
+                            src={avatarImageUrl}
+                            alt="Avatar preview"
+                            className="absolute h-full w-full object-contain"
+                            style={{
+                              transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                              transformOrigin: 'center center'
+                            }}
+                          />
+                        </div>
+                      );
+                    })()}
+                    {/* Border - matches HomeProfileCard exactly */}
+                    <div aria-hidden="true" className="absolute border-4 border-solid border-white/30 inset-[-4px] pointer-events-none rounded-[108px]" />
                   </div>
 
                   {/* Action Buttons */}
@@ -386,6 +401,8 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
         <AvatarImagePositioner
           imageUrl={avatarImageUrl}
           initialPosition={avatarPosition}
+          profileName={data.name || "Your Name"}
+          profileTitle={data.title || "Your Title"}
           onSave={handleSaveAvatarPosition}
           onClose={() => setShowAvatarPositioner(false)}
         />
