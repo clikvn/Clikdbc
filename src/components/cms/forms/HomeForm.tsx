@@ -25,9 +25,10 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
     values: data,
   });
 
-  const [showPositioner, setShowPositioner] = useState(false);
+  const [showBackgroundPositioner, setShowBackgroundPositioner] = useState(false);
   const [showAvatarPositioner, setShowAvatarPositioner] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const backgroundFileInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof BusinessCardData['personal'], value: string) => {
     onChange({
@@ -36,12 +37,18 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
     });
   };
 
-  const profileImageData = parseProfileImage(data.profileImage);
-  const currentImageUrl = profileImageData?.imageUrl || "";
-  const currentPosition = profileImageData?.position || { x: 0, y: 0, scale: 1 };
-  const currentAvatarPosition = profileImageData?.avatarPosition || { x: 0, y: 0, scale: 1 };
+  // Parse background image data
+  const backgroundImageData = parseProfileImage(data.profileImage || '');
+  const backgroundImageUrl = backgroundImageData?.imageUrl || "";
+  const backgroundPosition = backgroundImageData?.position || { x: 0, y: 0, scale: 1 };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Parse avatar image data
+  const avatarImageData = parseProfileImage(data.avatarImage || '');
+  const avatarImageUrl = avatarImageData?.imageUrl || "";
+  const avatarPosition = avatarImageData?.position || { x: 0, y: 0, scale: 1 };
+
+  // Background image handlers
+  const handleBackgroundFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -54,31 +61,52 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
       };
       handleChange('profileImage', JSON.stringify(newData));
       // Auto-open positioner after upload
-      setTimeout(() => setShowPositioner(true), 100);
+      setTimeout(() => setShowBackgroundPositioner(true), 100);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSavePosition = (position: { x: number; y: number; scale: number }) => {
+  const handleSaveBackgroundPosition = (position: { x: number; y: number; scale: number }) => {
     const newData: ProfileImageData = {
-      imageUrl: currentImageUrl,
-      position,
-      avatarPosition: profileImageData?.avatarPosition
+      imageUrl: backgroundImageUrl,
+      position
     };
     handleChange('profileImage', JSON.stringify(newData));
   };
 
-  const handleSaveAvatarPosition = (avatarPosition: { x: number; y: number; scale: number }) => {
-    const newData: ProfileImageData = {
-      imageUrl: currentImageUrl,
-      position: profileImageData?.position,
-      avatarPosition
-    };
-    handleChange('profileImage', JSON.stringify(newData));
-  };
-
-  const handleRemoveImage = () => {
+  const handleRemoveBackgroundImage = () => {
     handleChange('profileImage', '');
+  };
+
+  // Avatar image handlers
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataUrl = reader.result as string;
+      const newData: ProfileImageData = {
+        imageUrl: dataUrl,
+        position: { x: 0, y: 0, scale: 1 }
+      };
+      handleChange('avatarImage', JSON.stringify(newData));
+      // Auto-open positioner after upload
+      setTimeout(() => setShowAvatarPositioner(true), 100);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveAvatarPosition = (position: { x: number; y: number; scale: number }) => {
+    const newData: ProfileImageData = {
+      imageUrl: avatarImageUrl,
+      position
+    };
+    handleChange('avatarImage', JSON.stringify(newData));
+  };
+
+  const handleRemoveAvatarImage = () => {
+    handleChange('avatarImage', '');
   };
 
   return (
@@ -189,12 +217,12 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
                 </p>
               </div>
 
-              {currentImageUrl ? (
+              {backgroundImageUrl ? (
                 <div className="space-y-3">
                   {/* Image Preview */}
                   <div className="relative w-full h-48 bg-slate-100 rounded-lg overflow-hidden">
                     <img
-                      src={currentImageUrl}
+                      src={backgroundImageUrl}
                       alt="Background preview"
                       className="w-full h-full object-cover"
                     />
@@ -206,7 +234,7 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowPositioner(true)}
+                      onClick={() => setShowBackgroundPositioner(true)}
                       className="flex-1"
                     >
                       <Edit2 className="w-4 h-4 mr-2" />
@@ -216,7 +244,7 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => backgroundFileInputRef.current?.click()}
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Change
@@ -225,7 +253,7 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={handleRemoveImage}
+                      onClick={handleRemoveBackgroundImage}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -235,7 +263,7 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => backgroundFileInputRef.current?.click()}
                   className="w-full h-32 border-dashed"
                 >
                   <div className="flex flex-col items-center gap-2">
@@ -246,61 +274,118 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
               )}
 
               <input
-                ref={fileInputRef}
+                ref={backgroundFileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleFileSelect}
+                onChange={handleBackgroundFileSelect}
                 className="hidden"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Avatar Position Section */}
-        {currentImageUrl && (
-          <Card className="border-[#e4e4e7] shadow-sm gap-3">
-            <CardContent className="px-4 md:px-6 pb-5 md:pb-6 pt-5 md:pt-6">
-              <div className="space-y-4">
-                <div>
-                  <Label>Avatar Image Position</Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Adjust how your image appears in the circular avatar
-                  </p>
-                </div>
+        {/* Avatar Image Section */}
+        <Card className="border-[#e4e4e7] shadow-sm gap-3">
+          <CardContent className="px-4 md:px-6 pb-5 md:pb-6 pt-5 md:pt-6">
+            <div className="space-y-4">
+              <div>
+                <Label>Avatar Image</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Upload and position the image for your circular avatar
+                </p>
+              </div>
 
+              {avatarImageUrl ? (
+                <div className="space-y-3">
+                  {/* Avatar Preview */}
+                  <div className="relative w-32 h-32 mx-auto bg-slate-100 rounded-full overflow-hidden border-4 border-white shadow-md">
+                    <div className="absolute inset-0 rounded-full overflow-hidden">
+                      <img
+                        src={avatarImageUrl}
+                        alt="Avatar preview"
+                        className="absolute h-full w-full object-cover"
+                        style={{
+                          transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                          transformOrigin: 'center center'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAvatarPositioner(true)}
+                      className="flex-1"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Edit Position
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Change
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveAvatarImage}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : (
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={() => setShowAvatarPositioner(true)}
-                  className="w-full"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  className="w-full h-32 border-dashed"
                 >
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit Avatar Position
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm">Upload Avatar Image</span>
+                  </div>
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              )}
+
+              <input
+                ref={avatarFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFileSelect}
+                className="hidden"
+              />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Full-Screen Image Positioner */}
-      {showPositioner && currentImageUrl && (
+      {/* Full-Screen Image Positioner for Background */}
+      {showBackgroundPositioner && backgroundImageUrl && (
         <FullScreenImagePositioner
-          imageUrl={currentImageUrl}
-          initialPosition={currentPosition}
+          imageUrl={backgroundImageUrl}
+          initialPosition={backgroundPosition}
           profileName={data.name}
           profileTitle={data.title}
-          onSave={handleSavePosition}
-          onClose={() => setShowPositioner(false)}
+          onSave={handleSaveBackgroundPosition}
+          onClose={() => setShowBackgroundPositioner(false)}
         />
       )}
 
       {/* Avatar Image Positioner */}
-      {showAvatarPositioner && currentImageUrl && (
+      {showAvatarPositioner && avatarImageUrl && (
         <AvatarImagePositioner
-          imageUrl={currentImageUrl}
-          initialPosition={currentAvatarPosition}
+          imageUrl={avatarImageUrl}
+          initialPosition={avatarPosition}
           onSave={handleSaveAvatarPosition}
           onClose={() => setShowAvatarPositioner(false)}
         />

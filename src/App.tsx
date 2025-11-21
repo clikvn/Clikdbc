@@ -28,7 +28,7 @@ import { BusinessCardStudio } from "./components/cms/BusinessCardStudio";
 import { loadBusinessCardData, userExists, ensureDefaultUserExists } from "./utils/storage";
 import { loadFilteredBusinessCardData } from "./utils/filtered-data-loader";
 import { BusinessCardData, messagingUrlPatterns, socialChannelUrlPatterns, PortfolioCategory, PortfolioItem } from "./types/business-card";
-import { parseProfileImage, calculateImagePosition } from "./utils/profile-image-utils";
+import { parseProfileImage } from "./utils/profile-image-utils";
 import { calculateBackgroundImagePosition } from "./utils/home-background-positioning";
 import "./utils/openai-test"; // Load OpenAI test utility for console testing
 import "./utils/openai-debug"; // Load OpenAI debug utility for console testing
@@ -1429,10 +1429,10 @@ function Share({ onAIClick }: { onAIClick?: () => void }) {
 
   if (!data) return null;
 
-  // Parse profile image data
-  const profileImageData = parseProfileImage(data.personal.profileImage);
-  const imageUrl = profileImageData?.imageUrl || imgImg;
-  const imagePosition = calculateImagePosition(profileImageData);
+  // Parse avatar image data (separate from background)
+  const avatarImageData = parseProfileImage(data.personal.avatarImage || data.personal.profileImage); // Fallback to profileImage for backward compatibility
+  const imageUrl = avatarImageData?.imageUrl || "";
+  const avatarPosition = avatarImageData?.position || { x: 0, y: 0, scale: 1 };
 
   return (
     <div className="box-border content-stretch flex flex-col gap-[24px] items-center p-[24px] relative rounded-tl-[24px] rounded-tr-[24px] shrink-0 w-full" data-name="share">
@@ -1450,12 +1450,10 @@ function Share({ onAIClick }: { onAIClick?: () => void }) {
               <img 
                 alt="Profile" 
                 className="absolute h-full w-full object-contain" 
-                src={imageUrl}
+                src={imageUrl || imgImg}
                 style={{
-                  ...(imagePosition.transform && {
-                    transform: imagePosition.transform,
-                    transformOrigin: imagePosition.transformOrigin
-                  })
+                  transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                  transformOrigin: 'center center'
                 }}
               />
             </div>

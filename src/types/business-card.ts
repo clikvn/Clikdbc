@@ -89,7 +89,8 @@ export interface BusinessCardData {
     title: string;
     businessName: string;
     bio: string;
-    profileImage: string; // JSON string of ProfileImageData or empty string
+    profileImage: string; // JSON string of ProfileImageData or empty string (for background)
+    avatarImage: string; // JSON string of ProfileImageData or empty string (for avatar)
   };
   contact: {
     phone: ContactField;
@@ -153,7 +154,8 @@ export const defaultBusinessCardData: BusinessCardData = {
     title: "Interior Designer",
     businessName: "Design Solutions",
     bio: "Transforming spaces into works of art. Specializing in modern, minimalist designs that blend functionality with elegance.",
-    profileImage: ""
+    profileImage: "", // Background image
+    avatarImage: "" // Avatar image
   },
   contact: {
     phone: { value: "+84 123 456 789", groups: ['Public'] },

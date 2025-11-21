@@ -53,7 +53,7 @@
     target: 'esnext',
     outDir: 'build',
     sourcemap: false,
-    minify: 'terser',
+    minify: 'esbuild', // Use esbuild (default, faster, no extra dependency needed)
     rollupOptions: {
       output: {
         manualChunks: {

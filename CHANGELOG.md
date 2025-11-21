@@ -4,6 +4,59 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Build Fix - Vercel Deployment Error
+- **Date**: 2025-11-21
+- **Issue Fixed**: Build failed on Vercel with "terser not found" error
+- **Changes**:
+  - Changed minification from `terser` to `esbuild` in `vite.config.ts`
+  - `esbuild` is the default Vite minifier and doesn't require additional dependencies
+  - Faster build times (esbuild is faster than terser)
+  - No breaking changes - output quality is similar
+- **Files Modified**:
+  - `vite.config.ts` - Changed `minify: 'terser'` to `minify: 'esbuild'`
+- **Result**: Build now works on Vercel without additional dependencies
+
+### Avatar and Background Image Separation + Consistent UI/UX
+- **Date**: 2025-11-21
+- **Issue Fixed**: Avatar and background images were sharing the same image; inconsistent UI/UX
+- **Changes**:
+  - **Separated avatar and background images**: Added new `avatarImage` field to `BusinessCardData.personal`
+  - **Independent image management**: Avatar and background images can now be uploaded/replaced independently
+  - **Consistent UI/UX**: Both image sections now have identical UI/UX design:
+    - Same preview area layout
+    - Same button layout (Edit Position, Change, Delete)
+    - Same empty state design
+    - Same hover and interaction states
+  - **Updated data structure**: 
+    - `profileImage`: Now exclusively for background/home screen image
+    - `avatarImage`: New field for avatar/circular profile image
+  - **Migration support**: Added automatic migration for existing data to include `avatarImage` field
+  - **Updated components**:
+    - `HomeForm`: Completely rewritten to handle separate images with consistent UI
+    - `App.tsx`: Updated to use separate `avatarImage` field
+    - `storage.ts`: Added migration for `avatarImage` field
+    - `filtered-data-loader.ts`: Added filtering support for `avatarImage`
+- **Files Modified**:
+  - `src/types/business-card.ts` - Added `avatarImage` field to type definition
+  - `src/components/cms/forms/HomeForm.tsx` - Separated image handling, consistent UI
+  - `src/App.tsx` - Updated to use separate avatar image
+  - `src/utils/storage.ts` - Added migration for avatarImage
+  - `src/utils/filtered-data-loader.ts` - Added avatarImage filtering
+
+### Avatar Image Upload Functionality Added
+- **Date**: 2025-11-21
+- **Issue Fixed**: Missing avatar image upload functionality
+- **Changes**:
+  - Added dedicated avatar image upload button in HomeForm component
+  - Added separate file input handler for avatar images (`handleAvatarFileSelect`)
+  - Added avatar preview with current positioning applied
+  - Avatar section now shows upload button even when no image exists
+  - Uploading new avatar image preserves background position settings
+  - Auto-opens avatar positioner after new avatar image upload
+  - Improved UI with avatar preview circle showing current image
+- **Files Modified**:
+  - `src/components/cms/forms/HomeForm.tsx` - Added avatar upload functionality
+
 ### Vercel Production Review & Optimization - COMPLETE ✅
 - **Date**: 2025-11-21
 - **Status**: ✅ Production Ready (Deployment Confidence: 99%)

@@ -214,6 +214,11 @@ export function loadBusinessCardData(userCode?: string): BusinessCardData {
         data.personal.businessName = '';
       }
       
+      // Migration: Add avatarImage if missing (separate from profileImage)
+      if (data.personal && data.personal.avatarImage === undefined) {
+        data.personal.avatarImage = '';
+      }
+      
       // Migration: Add portfolioCategories if missing
       if (!data.portfolioCategories) {
         data.portfolioCategories = [];

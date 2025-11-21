@@ -79,6 +79,9 @@ export function loadFilteredBusinessCardData(pathname: string = window.location.
   if (!isFieldVisible('personal.profileImage', groupId)) {
     filtered.personal.profileImage = '';
   }
+  if (!isFieldVisible('personal.avatarImage', groupId)) {
+    filtered.personal.avatarImage = '';
+  }
   
   // Filter contact fields
   if (!isFieldVisible('contact.phone', groupId)) {
