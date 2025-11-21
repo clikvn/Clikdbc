@@ -49,10 +49,25 @@
         '@': path.resolve(__dirname, './src'),
       },
     },
-    build: {
-      target: 'esnext',
-      outDir: 'build',
+  build: {
+    target: 'esnext',
+    outDir: 'build',
+    sourcemap: false,
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+        },
+      },
     },
+  },
     server: {
       port: 3000,
       open: true,

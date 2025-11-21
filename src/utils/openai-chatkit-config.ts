@@ -12,24 +12,25 @@ export interface ChatKitConfig {
   useWorkflow?: boolean; // NEW: Toggle between workflow and chat completions
 }
 
-// ⚙️ HARDCODED CONFIGURATION FOR FIGMA MAKE
+// ⚙️ CONFIGURATION - SUPPORTS BOTH ENVIRONMENT VARIABLES AND HARDCODED VALUES
 // NOTE: Domain keys (domain_pk_*) only work with Realtime/Responses APIs, NOT Chat Completions
-// Using service account key for Chat Completions API
+// For production (Vercel), use environment variables: VITE_OPENAI_API_KEY
+// For development/Figma Make, you can hardcode the key below
 
-const OPENAI_API_KEY = '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';  // ✅ Service account key
+// Try to get from environment variable first, then fall back to hardcoded value
+const OPENAI_API_KEY = import.meta.env?.VITE_OPENAI_API_KEY || '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';
 
 // 🔧 RESPONSES API CONFIGURATION
 // To enable Responses API mode (modern OpenAI API):
-// 1. Set this to 'true' to use Responses API
-// 2. Leave as '' (empty) to use Chat Completions API (default)
+// 1. Set VITE_OPENAI_WORKFLOW_ID environment variable
+// 2. Or hardcode the workflow ID below
 // 
 // Responses API is OpenAI's modern, simpler API (similar to Chat Completions but with enhanced features)
 // Both use the same model (gpt-4o-mini) and pricing, but Responses API may have additional capabilities
 //
 // Learn more: https://platform.openai.com/docs/guides/migrate-to-responses
 
-const OPENAI_WORKFLOW_ID = '';  // Set to 'enabled' to use Responses API, or leave empty for Chat Completions
-                                // Both modes work identically for this use case
+const OPENAI_WORKFLOW_ID = import.meta.env?.VITE_OPENAI_WORKFLOW_ID || '';  // Leave empty for Chat Completions API
 
 // Default configuration for ChatKit
 export const chatKitConfig: ChatKitConfig = {
