@@ -1,7 +1,7 @@
 
-  # Digital Business Card
+  # Digital Business Card (VUPTT)
 
-  This is a code bundle for Digital Business Card. The original project is available at https://www.figma.com/design/trvOPrwmNbSusszJQyNTAW/Digital-Business-Card.
+  This is a code bundle for Digital Business Card (VUPTT). The original project is available at https://www.figma.com/design/trvOPrwmNbSusszJQyNTAW/Digital-Business-Card--VUPTT-.
 
   ## Running the code
 

@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Button } from "../ui/button";
 import { X, ZoomIn, ZoomOut, Maximize2, Check } from "lucide-react";
 import { ProfileImageData } from "../../types/business-card";
-import imgImg from "figma:asset/420b26ed698402e60bcb7141f4b23bc3850beb9d.png";
+const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 import svgPaths from "../../imports/svg-ryed6k4ibx";
 
 interface FullScreenImagePositionerProps {
@@ -10,7 +10,6 @@ interface FullScreenImagePositionerProps {
   initialPosition?: { x: number; y: number; scale: number };
   profileName: string;
   profileTitle: string;
-  profileLocation: string;
   onSave: (position: { x: number; y: number; scale: number }) => void;
   onClose: () => void;
 }
@@ -20,7 +19,6 @@ export function FullScreenImagePositioner({
   initialPosition = { x: 0, y: 0, scale: 1 },
   profileName,
   profileTitle,
-  profileLocation,
   onSave,
   onClose
 }: FullScreenImagePositionerProps) {
@@ -144,21 +142,6 @@ export function FullScreenImagePositioner({
           </div>
         </div>
         
-        {profileLocation && (
-          <div className="content-stretch flex gap-[4px] items-center justify-center relative rounded-[12px] shrink-0">
-            <div className="overflow-clip relative shrink-0 size-[16px]">
-              <div className="absolute inset-[4.17%_12.5%]">
-                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 12 15">
-                  <path clipRule="evenodd" d={svgPaths.p29b4d340} fill="var(--fill-0, #F8FAFC)" fillRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-            <div className="flex flex-col font-['Inter:Regular',sans-serif] font-normal justify-center leading-[0] not-italic relative shrink-0 text-[12px] text-nowrap text-slate-50">
-              <p className="leading-[20px]">{profileLocation}</p>
-            </div>
-          </div>
-        )}
-
         <div className="bg-[#c96442] h-[48px] relative rounded-[12px] shrink-0 w-full">
           <div className="flex flex-row items-center justify-center size-full">
             <div className="flex flex-col font-['Inter:Semi_Bold',sans-serif] font-semibold justify-center leading-[0] not-italic relative shrink-0 text-[14px] text-nowrap text-slate-50">

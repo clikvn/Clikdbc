@@ -14,7 +14,7 @@ declare global {
   }
 }
 import svgPaths from "./imports/svg-ryed6k4ibx";
-import imgImg from "figma:asset/420b26ed698402e60bcb7141f4b23bc3850beb9d.png";
+const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 import Contact from "./imports/Contact";
 import contactSvgPaths from "./imports/svg-1txqd1yzsg";
 import profileSvgPaths from "./imports/svg-i5dwj49pkv";

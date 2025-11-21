@@ -37,7 +37,6 @@ export function PreviewTab({ data }: PreviewTabProps) {
               <div className="bg-white p-3 rounded text-sm space-y-1">
                 <p><strong>Name:</strong> {data.personal.name || "Not set"}</p>
                 <p><strong>Title:</strong> {data.personal.title || "Not set"}</p>
-                <p><strong>Location:</strong> {data.personal.location || "Not set"}</p>
                 <p><strong>Bio:</strong> {data.personal.bio ? `${data.personal.bio.substring(0, 100)}${data.personal.bio.length > 100 ? '...' : ''}` : "Not set"}</p>
               </div>
             </div>

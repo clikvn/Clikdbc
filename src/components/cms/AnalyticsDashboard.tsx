@@ -207,9 +207,6 @@ export function AnalyticsDashboard() {
     if (profile.socialMessaging.whatsapp.username) {
       elements.home.push({ label: 'WhatsApp', type: 'whatsapp' });
     }
-    if (profile.contact.address.value) {
-      elements.home.push({ label: 'Location', type: 'location' });
-    }
     // Add a generic website/link button (common on home screens)
     elements.home.push({ label: 'Save Contact', type: 'save' });
 
@@ -219,9 +216,6 @@ export function AnalyticsDashboard() {
     }
     if (profile.contact.email.value) {
       elements.contact.push({ label: 'Email', type: 'email' });
-    }
-    if (profile.contact.address.value) {
-      elements.contact.push({ label: 'Address', type: 'location' });
     }
     
     // Messaging apps

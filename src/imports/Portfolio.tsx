@@ -1,6 +1,6 @@
 import svgPaths from "./svg-si0rv80jbp";
-import imgImg from "figma:asset/1635d94ad705220ac6b8f6ff8c00a0762bd530f5.png";
-import imgImg1 from "figma:asset/449c8f8ba1b9e460b6c9171256f41a197aee5c0e.png";
+const imgImg = "https://images.unsplash.com/photo-1762436670018-8903472152df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBhcmNoaXRlY3R1cmUlMjBwb3J0Zm9saW98ZW58MXx8fHwxNzYzNTE3NzEzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
+const imgImg1 = "https://images.unsplash.com/photo-1639664701039-f747268e2243?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMHBvcnRmb2xpbyUyMHByb2plY3R8ZW58MXx8fHwxNzYzNTE3NzEzfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 
 function Logo() {
   return (

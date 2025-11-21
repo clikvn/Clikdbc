@@ -134,7 +134,6 @@ export function AIAssistant({
     if (lower.includes('experience') && lower.includes('description')) return 'experience';
     if (lower.includes('description')) return 'description';
     if (lower.includes('name')) return 'name';
-    if (lower.includes('location')) return 'location';
     return 'description';
   };
   

@@ -174,7 +174,6 @@ ${profileUrl}`;
       personal.phone ? `TEL:${personal.phone}` : '',
       professional?.position ? `TITLE:${professional.position}` : '',
       professional?.company ? `ORG:${professional.company}` : '',
-      personal.location ? `ADR:;;${personal.location};;;;` : '',
       personal.bio ? `NOTE:${personal.bio}` : '',
       `URL:${profileUrl}`,
       'END:VCARD'

@@ -1,5 +1,5 @@
 import svgPaths from "./svg-t43go4j2wu";
-import imgImg from "figma:asset/0a66fc9b99f063b4c5fc622d0ab5d7d243f6ed44.png";
+const imgImg = "https://images.unsplash.com/photo-1581065178047-8ee15951ede6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NjM1MTc3MTN8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 
 function Logo() {
   return (
