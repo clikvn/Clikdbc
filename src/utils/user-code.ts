@@ -1,7 +1,7 @@
 import { ContactGroup } from '../types/contacts';
 
 const USER_CODE_KEY = 'user_code';
-const DEFAULT_USER_CODE = 'myclik'; // Default user set by system admin
+const DEFAULT_USER_CODE = 'mydbc'; // Default user set by system admin
 
 // Group code mapping for shorter URLs
 export const GROUP_CODES: Record<ContactGroup, string> = {
@@ -92,6 +92,8 @@ export function parseProfileUrl(pathname?: string): {
   screen: 'home' | 'contact' | 'profile' | 'portfolio' | null;
   isCMS: boolean; // Whether this is a CMS route
   cmsSection: string | null; // CMS section if on a CMS route
+  isLogin: boolean; // Whether this is a login route
+  isRegister: boolean; // Whether this is a register route
 } {
   // Default to current pathname if not provided
   const path = pathname || (typeof window !== 'undefined' ? window.location.pathname : '/');
@@ -99,21 +101,40 @@ export function parseProfileUrl(pathname?: string): {
   // Remove leading slash and split
   const parts = path.replace(/^\//, '').split('/').filter(p => p);
   
-  // Handle root path - return default user
+  // Handle root path - no userCode
   if (parts.length === 0 || !parts[0]) {
-    return { userCode: DEFAULT_USER_CODE, group: null, screen: null, isCMS: false, cmsSection: null };
+    return { userCode: null, group: null, screen: null, isCMS: false, cmsSection: null, isLogin: false, isRegister: false };
   }
   
-  // First part is always userCode
+  // Check if first part is 'login' or 'register' (root-level routes)
+  if (parts[0] === 'login') {
+    return { userCode: null, group: null, screen: null, isCMS: false, cmsSection: null, isLogin: true, isRegister: false };
+  }
+  
+  if (parts[0] === 'register') {
+    return { userCode: null, group: null, screen: null, isCMS: false, cmsSection: null, isLogin: false, isRegister: true };
+  }
+  
+  // First part is userCode
   const userCode = parts[0];
   
-  // Second part could be groupCode, screen, or 'studio' (CMS indicator)
+  // Second part could be groupCode, screen, 'studio' (CMS), 'login', or 'register'
   const secondPart = parts[1];
+  
+  // Check if this is a login route (userCode/login)
+  if (secondPart === 'login') {
+    return { userCode, group: null, screen: null, isCMS: false, cmsSection: null, isLogin: true, isRegister: false };
+  }
+  
+  // Check if this is a register route (userCode/register)
+  if (secondPart === 'register') {
+    return { userCode, group: null, screen: null, isCMS: false, cmsSection: null, isLogin: false, isRegister: true };
+  }
   
   // Check if this is a CMS route
   if (secondPart === 'studio') {
     const cmsSection = parts[2] || null; // Third part is the CMS section
-    return { userCode, group: null, screen: null, isCMS: true, cmsSection };
+    return { userCode, group: null, screen: null, isCMS: true, cmsSection, isLogin: false, isRegister: false };
   }
   
   // Third part would be screen if we have a groupCode
@@ -147,7 +168,7 @@ export function parseProfileUrl(pathname?: string): {
     screen = secondPart;
   }
   
-  return { userCode, group, screen, isCMS: false, cmsSection: null };
+  return { userCode, group, screen, isCMS: false, cmsSection: null, isLogin: false, isRegister: false };
 }
 
 /**
@@ -189,10 +210,33 @@ export function buildCMSUrl(userCode?: string, section?: string): string {
 }
 
 /**
- * Check if the current URL matches our user code
+ * Build a login URL (root-level route)
  */
-export function isOwnProfile(pathname: string): boolean {
+export function buildLoginUrl(userCode?: string): string {
+  // Always return root-level /login route
+  return '/login';
+}
+
+/**
+ * Build a register URL (root-level route)
+ */
+export function buildRegisterUrl(userCode?: string): string {
+  // Always return root-level /register route
+  return '/register';
+}
+
+/**
+ * Check if the current URL matches our user code
+ * This function can optionally check against an authenticated userCode
+ */
+export function isOwnProfile(pathname: string, authenticatedUserCode?: string | null): boolean {
   const { userCode } = parseProfileUrl(pathname);
   if (!userCode) return false;
+  
+  // If authenticated userCode is provided, use it; otherwise fallback to localStorage
+  if (authenticatedUserCode !== undefined && authenticatedUserCode !== null) {
+    return userCode === authenticatedUserCode;
+  }
+  
   return userCode === getUserCode();
 }

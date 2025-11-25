@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BusinessCardData } from '../types/business-card';
 import { loadFilteredBusinessCardData } from '../utils/filtered-data-loader';
+import { parseProfileUrl } from '../utils/user-code';
+import { useAuth } from './useAuth';
 
 /**
  * Hook that loads filtered business card data and reloads when URL or settings change
@@ -8,6 +10,19 @@ import { loadFilteredBusinessCardData } from '../utils/filtered-data-loader';
 export function useFilteredBusinessCardData(): BusinessCardData | null {
   const [data, setData] = useState<BusinessCardData | null>(null);
   const [pathname, setPathname] = useState(window.location.pathname);
+  const { user } = useAuth();
+  const [authenticatedUserCode, setAuthenticatedUserCode] = useState<string | null>(null);
+
+  // Get authenticated user's userCode - use Supabase UID directly
+  useEffect(() => {
+    if (user) {
+      // Use the Supabase auth UID as the userCode (without dashes)
+      const userCode = user.id.replace(/-/g, '');
+      setAuthenticatedUserCode(userCode);
+    } else {
+      setAuthenticatedUserCode(null);
+    }
+  }, [user]);
 
   // Listen for URL changes
   useEffect(() => {
@@ -27,9 +42,10 @@ export function useFilteredBusinessCardData(): BusinessCardData | null {
 
   // Listen for group share settings changes
   useEffect(() => {
-    const handleSettingsChange = () => {
+    const handleSettingsChange = async () => {
       console.log('[useFilteredBusinessCardData] Settings changed, reloading data');
-      setData(loadFilteredBusinessCardData(pathname));
+      const data = await loadFilteredBusinessCardData(pathname, authenticatedUserCode);
+      setData(data);
     };
 
     window.addEventListener('groupShareSettingsChanged', handleSettingsChange);
@@ -37,13 +53,14 @@ export function useFilteredBusinessCardData(): BusinessCardData | null {
     return () => {
       window.removeEventListener('groupShareSettingsChanged', handleSettingsChange);
     };
-  }, [pathname]);
+  }, [pathname, authenticatedUserCode]);
 
   // Listen for business card data updates (real-time sync)
   useEffect(() => {
-    const handleDataUpdate = () => {
+    const handleDataUpdate = async () => {
       console.log('[useFilteredBusinessCardData] Data updated, reloading');
-      setData(loadFilteredBusinessCardData(pathname));
+      const data = await loadFilteredBusinessCardData(pathname, authenticatedUserCode);
+      setData(data);
     };
 
     window.addEventListener('businessCardDataUpdated', handleDataUpdate);
@@ -51,13 +68,20 @@ export function useFilteredBusinessCardData(): BusinessCardData | null {
     return () => {
       window.removeEventListener('businessCardDataUpdated', handleDataUpdate);
     };
-  }, [pathname]);
+  }, [pathname, authenticatedUserCode]);
 
-  // Load data whenever pathname changes
+  // Load data whenever pathname or authenticatedUserCode changes
   useEffect(() => {
-    console.log('[useFilteredBusinessCardData] Loading data for pathname:', pathname);
-    setData(loadFilteredBusinessCardData(pathname));
-  }, [pathname]);
+    console.log('[useFilteredBusinessCardData] Loading data for pathname:', pathname, 'authenticatedUserCode:', authenticatedUserCode);
+    
+    // Load fresh from Supabase (no localStorage)
+    loadFilteredBusinessCardData(pathname, authenticatedUserCode).then((data) => {
+      setData(data);
+    }).catch((error) => {
+      console.error('Error loading data:', error);
+      setData(null);
+    });
+  }, [pathname, authenticatedUserCode]);
 
   return data;
 }

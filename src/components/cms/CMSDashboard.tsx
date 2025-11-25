@@ -33,6 +33,7 @@ import {
   setCurrentThreadId 
 } from "../../utils/conversation-storage";
 import { parseProfileUrl } from "../../utils/user-code";
+import { useAuth } from "../../hooks/useAuth";
 
 interface CMSDashboardProps {
   onLogout: () => void;
@@ -52,9 +53,50 @@ interface ActiveField {
 
 export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNavigateToStudio, onMenuClick, onOpenAIAssistant }: CMSDashboardProps) {
   // Get userCode from URL
-  const { userCode } = parseProfileUrl(window.location.pathname);
+  const { userCode: urlUserCode } = parseProfileUrl(window.location.pathname);
+  const { user } = useAuth();
+  const [authenticatedUserCode, setAuthenticatedUserCode] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
   
-  const [data, setData] = useState<BusinessCardData>(loadBusinessCardData(userCode || undefined));
+  // Get authenticated user's userCode - use Supabase UID directly
+  useEffect(() => {
+    if (user) {
+      // Use the Supabase auth UID as the userCode (without dashes)
+      const userCode = user.id.replace(/-/g, '');
+      setAuthenticatedUserCode(userCode);
+      setIsVerifying(false);
+      
+      // If userCode from URL doesn't match authenticated user's userCode, redirect
+      if (userCode && urlUserCode && userCode !== urlUserCode) {
+        toast.error("You don't have access to this CMS. Redirecting to your CMS...");
+        // Redirect handled by parent App.tsx
+      }
+    } else {
+      setIsVerifying(false);
+    }
+  }, [user, urlUserCode]);
+  
+  // Use authenticated user's userCode if available, otherwise fallback to URL userCode
+  const effectiveUserCode = authenticatedUserCode || urlUserCode;
+  
+  const [data, setData] = useState<BusinessCardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Load fresh from Supabase on mount
+  useEffect(() => {
+    if (effectiveUserCode && !isVerifying) {
+      setIsLoading(true);
+      loadBusinessCardData(effectiveUserCode).then((loadedData) => {
+        setData(loadedData);
+        setIsLoading(false);
+      }).catch((error) => {
+        console.error('Error loading data:', error);
+        setIsLoading(false);
+      });
+    } else if (!isVerifying) {
+      setIsLoading(false);
+    }
+  }, [effectiveUserCode, isVerifying]);
   const [activeTab, setActiveTab] = useState(activeSection || "home");
   const [activeField, setActiveField] = useState<ActiveField | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -131,10 +173,14 @@ export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNaviga
     };
   }, [onOpenAIAssistant]);
 
-  // Auto-save whenever data changes
+  // Auto-save whenever data changes (save to Supabase only, no localStorage)
   useEffect(() => {
-    saveBusinessCardData(data, userCode || undefined);
-  }, [data, userCode]);
+    if (data && !isLoading) {
+      saveBusinessCardData(data, effectiveUserCode || undefined).catch((error) => {
+        console.error('Error auto-saving data:', error);
+      });
+    }
+  }, [data, effectiveUserCode, isLoading]);
 
   const handleDataChange = (section: keyof BusinessCardData, value: any) => {
     setData(prev => ({
@@ -153,16 +199,21 @@ export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNaviga
     }));
   };
 
-  const handleExport = () => {
-    const json = exportData();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `business-card-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Data exported successfully");
+  const handleExport = async () => {
+    try {
+      const json = await exportData();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `business-card-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Data exported successfully");
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      toast.error("Failed to export data");
+    }
   };
 
   const handleImport = () => {
@@ -177,7 +228,11 @@ export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNaviga
         const text = await file.text();
         const success = importData(text);
         if (success) {
-          setData(loadBusinessCardData(userCode || undefined));
+          loadBusinessCardData(effectiveUserCode || undefined).then((loadedData) => {
+            setData(loadedData);
+          }).catch((error) => {
+            console.error('Error reloading data:', error);
+          });
           toast.success("Data imported successfully");
         } else {
           toast.error("Invalid data format");
@@ -196,6 +251,18 @@ export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNaviga
       setMobileAIOpen(true);
     }
   };
+
+  // Show loading state while data is being loaded
+  if (isLoading || !data || isVerifying) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+          <p className="mt-4 text-[#535146]">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fafaf9] flex flex-col h-screen">
@@ -222,6 +289,7 @@ export function CMSDashboard({ onLogout, onNavigateHome, activeSection, onNaviga
               <TabsContent value="home" className="mt-0 space-y-6">
                 <HomeForm
                   data={data.personal}
+                  userCode={effectiveUserCode}
                   onChange={(value) => handleDataChange('personal', value)}
                   onFieldFocus={handleFieldFocus}
                 />

@@ -1,0 +1,114 @@
+-- Create user_infos table to store user information
+-- Run this in Supabase SQL Editor: https://app.supabase.com/project/btyjxckmqzqdqurgoojd/editor/sql
+
+-- 1. Create the user_infos table
+CREATE TABLE IF NOT EXISTS public.user_infos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_code text NOT NULL UNIQUE,
+  full_name text,
+  professional_title text,
+  business_name text,
+  bio text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT user_infos_pkey PRIMARY KEY (id)
+);
+
+-- 2. Create index for faster lookups by user_code
+CREATE INDEX IF NOT EXISTS user_infos_user_code_idx ON public.user_infos USING btree (user_code);
+
+-- 3. Enable Row Level Security (RLS)
+ALTER TABLE public.user_infos ENABLE ROW LEVEL SECURITY;
+
+-- 4. Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to delete their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow public read access to user_infos" ON public.user_infos;
+
+-- 5. Create RLS Policies
+
+-- Policy: Allow authenticated users to read their own info
+CREATE POLICY "Allow authenticated users to read their own user_info"
+ON public.user_infos
+FOR SELECT
+TO authenticated
+USING (
+  user_code = (
+    SELECT REPLACE(id::text, '-', '') FROM auth.users WHERE id = auth.uid()
+  )
+);
+
+-- Policy: Allow public read access (for viewing profiles)
+CREATE POLICY "Allow public read access to user_infos"
+ON public.user_infos
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+-- Policy: Allow authenticated users to insert their own info
+CREATE POLICY "Allow authenticated users to insert their own user_info"
+ON public.user_infos
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  user_code = (
+    SELECT REPLACE(id::text, '-', '') FROM auth.users WHERE id = auth.uid()
+  )
+);
+
+-- Policy: Allow authenticated users to update their own info
+CREATE POLICY "Allow authenticated users to update their own user_info"
+ON public.user_infos
+FOR UPDATE
+TO authenticated
+USING (
+  user_code = (
+    SELECT REPLACE(id::text, '-', '') FROM auth.users WHERE id = auth.uid()
+  )
+)
+WITH CHECK (
+  user_code = (
+    SELECT REPLACE(id::text, '-', '') FROM auth.users WHERE id = auth.uid()
+  )
+);
+
+-- Policy: Allow authenticated users to delete their own info
+CREATE POLICY "Allow authenticated users to delete their own user_info"
+ON public.user_infos
+FOR DELETE
+TO authenticated
+USING (
+  user_code = (
+    SELECT REPLACE(id::text, '-', '') FROM auth.users WHERE id = auth.uid()
+  )
+);
+
+-- 6. Create a function to automatically update the updated_at timestamp
+CREATE OR REPLACE FUNCTION public.handle_user_infos_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Create a trigger to call the function on update
+DROP TRIGGER IF EXISTS set_user_infos_updated_at ON public.user_infos;
+CREATE TRIGGER set_user_infos_updated_at
+BEFORE UPDATE ON public.user_infos
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_user_infos_updated_at();
+
+-- 8. Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON public.user_infos TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
+-- Success message
+DO $$
+BEGIN
+  RAISE NOTICE 'user_infos table created successfully!';
+END $$;
+

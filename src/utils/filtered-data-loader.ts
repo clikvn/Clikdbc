@@ -30,15 +30,21 @@ function deepClone<T>(obj: T): T {
 /**
  * Filter business card data based on group visibility settings
  */
-export function loadFilteredBusinessCardData(pathname: string = window.location.pathname): BusinessCardData {
+export async function loadFilteredBusinessCardData(pathname: string = window.location.pathname, authenticatedUserCode?: string | null): Promise<BusinessCardData> {
   // Parse URL to get both userCode and group context
   const { userCode, group: groupCodeOrId } = parseProfileUrl(pathname);
   
-  // Load data for the specific user
-  const data = loadBusinessCardData(userCode || undefined);
+  // Determine which userCode to use for loading data
+  // If authenticated and viewing own profile, use authenticated userCode; otherwise use URL userCode
+  const effectiveUserCode = authenticatedUserCode && userCode === authenticatedUserCode 
+    ? authenticatedUserCode 
+    : userCode;
+  
+  // Load data for the specific user from Supabase (fresh from database)
+  const data = await loadBusinessCardData(effectiveUserCode || undefined);
   
   // Check if viewing own profile - if so, show all data without filtering
-  const viewingOwnProfile = isOwnProfile(pathname);
+  const viewingOwnProfile = isOwnProfile(pathname, authenticatedUserCode);
   if (viewingOwnProfile) {
     console.log('[FilteredData] Viewing own profile - showing all data without filtering');
     return data; // Return unfiltered data when viewing your own profile

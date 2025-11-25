@@ -102,7 +102,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.about" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.about"
+              currentGroups={profile.about.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('about', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Tell people about yourself and your expertise</p>
         </CardHeader>
@@ -169,7 +173,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.serviceAreas" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.serviceAreas"
+              currentGroups={profile.serviceAreas.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('serviceAreas', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Geographic areas where you provide services</p>
         </CardHeader>
@@ -236,7 +244,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.specialties" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.specialties"
+              currentGroups={profile.specialties.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('specialties', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Your areas of expertise and specialization</p>
         </CardHeader>
@@ -303,7 +315,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.experience" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.experience"
+              currentGroups={profile.experience.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('experience', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Your professional work experience and background</p>
         </CardHeader>
@@ -370,7 +386,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.languages" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.languages"
+              currentGroups={profile.languages.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('languages', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Languages you speak and communicate in</p>
         </CardHeader>
@@ -437,7 +457,11 @@ export function ProfileForm({ personal, profile, customLabels, onPersonalChange,
                 />
               </CardTitle>
             </div>
-            <FieldVisibilityPopover fieldPath="profile.certifications" />
+            <FieldVisibilityPopover 
+              fieldPath="profile.certifications"
+              currentGroups={profile.certifications.groups}
+              onGroupsChange={(newGroups) => handleGroupsChange('certifications', newGroups)}
+            />
           </div>
           <p className="text-sm text-[#71717a] m-[0px]">Professional certifications and licenses you hold</p>
         </CardHeader>

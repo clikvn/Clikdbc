@@ -1,107 +1,93 @@
-# ✅ Vercel Deployment Checklist
+# Deployment Checklist
 
-## Pre-Deployment Status
+## Pre-Deployment
 
-- ✅ **Build Configuration**: Optimized for production (esbuild minifier)
-- ✅ **Vercel Configuration**: `vercel.json` properly configured
-- ✅ **Build Test**: Production build successful (no errors)
-- ✅ **Environment Variables**: `.env.example` template provided
-- ✅ **Git Ignore**: All sensitive files excluded
-- ✅ **Code Quality**: No console errors, production-ready
+### Database Setup
+- [ ] Run `COPY_SETUP_ALL_TABLES.txt` in Supabase SQL Editor
+- [ ] Verify all 3 tables exist: `user_infos`, `user_contacts`, `user_profiles`
+- [ ] Verify RLS policies are active on all tables
+- [ ] Test creating a user and saving data
 
----
+### Storage Setup
+- [ ] Create `profile-images` bucket in Supabase Storage (public, 2MB limit)
+- [ ] Create `avatar-images` bucket in Supabase Storage (public, 2MB limit)
+- [ ] Run `COPY_SETUP_STORAGE_RLS_POLICIES.txt` for Storage RLS policies
+- [ ] Test uploading an image
 
-## Deployment Steps
+### Authentication Setup
+- [ ] Configure email authentication in Supabase
+- [ ] Set email confirmation settings (disable for testing, enable for production)
+- [ ] Test user registration
+- [ ] Test user login
 
-### 1. Push to GitHub
-```bash
-git add .
-git commit -m "Ready for production deployment"
-git push origin main
-```
+## Vercel Configuration
 
-### 2. Deploy on Vercel
+### Environment Variables
+- [ ] `VITE_SUPABASE_URL` - Set to your Supabase project URL
+- [ ] `VITE_SUPABASE_ANON_KEY` - Set to your Supabase anon public key
+- [ ] `VITE_OPENAI_API_KEY` - Optional, for AI features
+- [ ] `VITE_OPENAI_WORKFLOW_ID` - Optional, for AI workflows
 
-#### Option A: Via Vercel Dashboard (Recommended)
-1. Go to [vercel.com](https://vercel.com)
-2. Click **"Add New Project"**
-3. Import your GitHub repository
-4. Configure:
-   - **Framework Preset**: Vite (auto-detected)
-   - **Build Command**: `npm run build` (auto-detected)
-   - **Output Directory**: `build` (auto-detected)
-   - **Install Command**: `npm install` (auto-detected)
+### Build Settings
+- [ ] Framework: Vite
+- [ ] Build Command: `npm run build`
+- [ ] Output Directory: `build`
+- [ ] Install Command: `npm install`
 
-#### Option B: Via Vercel CLI
-```bash
-npm i -g vercel
-vercel
-```
+### Deployment
+- [ ] Repository connected to Vercel
+- [ ] Environment variables added
+- [ ] Build completes successfully
+- [ ] Deployment is live
 
-### 3. Add Environment Variables
+## Post-Deployment Testing
 
-In Vercel Dashboard → Project Settings → Environment Variables:
+### Authentication
+- [ ] User can register new account
+- [ ] User can login with existing account
+- [ ] User is redirected correctly after login/register
+- [ ] Unauthenticated users are redirected to login
 
-**Required:**
-- `VITE_OPENAI_API_KEY` = `your_openai_api_key_here`
+### Data Operations
+- [ ] User can save personal information (name, title, business, bio)
+- [ ] User can save contact information (phone, email, address, messaging, social)
+- [ ] User can save profile information (about, service areas, specialties, etc.)
+- [ ] Data loads correctly when viewing profile
+- [ ] Visibility groups work correctly
 
-**Optional:**
-- `VITE_OPENAI_WORKFLOW_ID` = (leave empty for Chat Completions API)
+### Image Operations
+- [ ] User can upload background image (under 2MB)
+- [ ] User can upload avatar image (under 2MB)
+- [ ] Images are displayed correctly
+- [ ] Image positioning works
+- [ ] Old images are deleted when replaced
 
-⚠️ **Important**: After adding environment variables, **redeploy** your project for changes to take effect.
+### Routing
+- [ ] Root URL (`/`) redirects to `/login`
+- [ ] Login page is accessible
+- [ ] Register page is accessible
+- [ ] User profile page is accessible after login
+- [ ] CMS studio is accessible after login
+- [ ] All routes work correctly (SPA routing)
 
-### 4. Verify Deployment
+## Security Checklist
 
-After deployment, verify:
-- ✅ Home page loads correctly
-- ✅ Avatar and background images display properly
-- ✅ Avatar positioner works correctly
-- ✅ All forms save data correctly
-- ✅ Navigation works
+- [ ] Using **anon public** key (not service_role key)
+- [ ] RLS policies are active on all tables
+- [ ] Storage buckets have proper RLS policies
+- [ ] Environment variables are set in Vercel (not in code)
+- [ ] No sensitive keys in repository
 
----
+## Performance Checklist
 
-## Build Output
+- [ ] Build completes in reasonable time (< 5 minutes)
+- [ ] Page loads quickly (< 3 seconds)
+- [ ] Images are optimized
+- [ ] Static assets are cached properly
 
-**Production build completed successfully:**
-- `build/index.html` - 0.63 kB
-- `build/assets/index-DJGVajAB.css` - 88.27 kB (gzip: 15.56 kB)
-- `build/assets/vendor-ui-HLOKGu8G.js` - 89.83 kB (gzip: 30.45 kB)
-- `build/assets/vendor-react-DDxydHEc.js` - 141.72 kB (gzip: 45.48 kB)
-- `build/assets/index-CqRvoYHz.js` - 1,399.62 kB (gzip: 317.72 kB)
+## Documentation
 
-**Note**: Large chunk size warning is normal for this application size. Vercel handles large bundles well.
-
----
-
-## Configuration Files
-
-All required files are in place:
-- ✅ `vercel.json` - Vercel deployment configuration
-- ✅ `vite.config.ts` - Production build optimization
-- ✅ `.gitignore` - Proper file exclusions
-- ✅ `env.example` - Environment variable template
-
----
-
-## Post-Deployment
-
-After deployment:
-1. Test all features in production
-2. Verify environment variables are set correctly
-3. Check that images load properly
-4. Test avatar and background positioning
-5. Verify data persistence (localStorage works in browser)
-
----
-
-## Support
-
-If you encounter any issues:
-1. Check Vercel build logs
-2. Verify environment variables are set
-3. Check browser console for errors
-4. Review `CHANGELOG.md` for recent changes
-
-**Status**: ✅ **READY FOR DEPLOYMENT**
-
+- [ ] `VERCEL_DEPLOYMENT.md` reviewed
+- [ ] `DEPLOYMENT_CHECKLIST.md` reviewed
+- [ ] All SQL scripts are available
+- [ ] Environment variable guide is clear

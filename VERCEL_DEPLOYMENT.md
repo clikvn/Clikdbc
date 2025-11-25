@@ -1,188 +1,149 @@
 # Vercel Deployment Guide
 
-This guide will help you deploy your Digital Business Card application to Vercel.
-
 ## Prerequisites
 
-- A [Vercel account](https://vercel.com/signup) (free tier is sufficient)
-- Your project pushed to a Git repository (GitHub, GitLab, or Bitbucket)
-- An OpenAI API key (if using AI features)
+1. **Supabase Database Setup**
+   - Run `COPY_SETUP_ALL_TABLES.txt` in Supabase SQL Editor
+   - Set up Storage buckets (see `SUPABASE_STORAGE_SETUP.md`)
 
-## Quick Deployment Steps
+2. **Supabase Storage Setup**
+   - Create `profile-images` bucket (public, 2MB limit)
+   - Create `avatar-images` bucket (public, 2MB limit)
+   - Run `COPY_SETUP_STORAGE_RLS_POLICIES.txt` for Storage RLS policies
 
-### 1. Connect Your Repository
+## Environment Variables
+
+### Required Environment Variables
+
+Add these in Vercel Dashboard → Settings → Environment Variables:
+
+```
+VITE_SUPABASE_URL=https://btyjxckmqzqdqurgoojd.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_public_key_here
+```
+
+**How to get your keys:**
+1. Go to: https://app.supabase.com/project/btyjxckmqzqdqurgoojd/settings/api
+2. Copy **Project URL** → `VITE_SUPABASE_URL`
+3. Copy **anon public** key → `VITE_SUPABASE_ANON_KEY`
+   - ⚠️ Use the **anon public** key (starts with `eyJ...`)
+   - ❌ **DO NOT** use the service_role secret key
+
+### Optional Environment Variables
+
+For AI features (if enabled):
+
+```
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+VITE_OPENAI_WORKFLOW_ID=your_workflow_id_here
+```
+
+## Deployment Steps
+
+### 1. Connect Repository to Vercel
 
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click **"Add New Project"**
+2. Click "Add New Project"
 3. Import your Git repository
-4. Select the repository containing this project
+4. Configure project settings:
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `build`
+   - **Install Command**: `npm install`
 
-### 2. Configure Build Settings
+### 2. Add Environment Variables
 
-Vercel should auto-detect the framework (Vite), but verify these settings:
+1. In Vercel project settings, go to **Environment Variables**
+2. Add all required variables (see above)
+3. Set them for **Production**, **Preview**, and **Development** environments
+4. Click "Save"
 
-- **Framework Preset**: Vite
-- **Build Command**: `npm run build`
-- **Output Directory**: `build`
-- **Install Command**: `npm install`
+### 3. Deploy
 
-These settings are automatically configured in `vercel.json`.
+1. Push your code to the connected Git branch
+2. Vercel will automatically build and deploy
+3. Or click "Deploy" in Vercel dashboard
 
-### 3. Add Environment Variables
+### 4. Verify Deployment
 
-In the Vercel project settings, add the following environment variables:
+1. Check build logs for any errors
+2. Visit your deployed URL
+3. Test:
+   - User registration
+   - User login
+   - Data saving/loading
+   - Image uploads
 
-#### Required (for AI features):
-- **Name**: `VITE_OPENAI_API_KEY`
-- **Value**: Your OpenAI API key (starts with `sk-`)
-- Get it from: https://platform.openai.com/api-keys
+## Build Configuration
 
-#### Optional:
-- **Name**: `VITE_OPENAI_WORKFLOW_ID`
-- **Value**: Your OpenAI Workflow ID (leave empty to use Chat Completions API)
+The project uses `vercel.json` for configuration:
 
-**Note**: Make sure to add these to all environments (Production, Preview, Development).
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
 
-### 4. Deploy
-
-1. Click **"Deploy"**
-2. Wait for the build to complete (usually 1-2 minutes)
-3. Your site will be live at `https://your-project.vercel.app`
-
-## Post-Deployment
-
-### Custom Domain (Optional)
-
-1. Go to your project in Vercel Dashboard
-2. Navigate to **Settings** → **Domains**
-3. Add your custom domain
-4. Follow the DNS configuration instructions
-
-### Environment Variables Update
-
-To update environment variables after deployment:
-
-1. Go to **Settings** → **Environment Variables**
-2. Update or add variables
-3. Redeploy the project for changes to take effect
-
-## Architecture Notes
-
-### Client-Side Storage
-
-This application uses browser localStorage for:
-- Business card data
-- User profiles
-- AI conversation history
-
-**Important**: Data is stored locally in the user's browser and is not synchronized across devices.
-
-### API Security
-
-**⚠️ Security Warning**: The OpenAI API key is included in the client-side bundle. For production apps with multiple users, consider:
-
-1. **Backend Proxy**: Create a backend API to handle OpenAI requests
-2. **Rate Limiting**: Implement rate limiting to prevent abuse
-3. **Domain Restrictions**: Use domain-restricted API keys if available
-
-For personal/internal use, the current implementation is acceptable.
-
-## Build Optimization
-
-The project is configured with:
-
-- **Code Splitting**: React and UI libraries are split into separate chunks
-- **Minification**: Terser minification for smaller bundle sizes
-- **No Source Maps**: Source maps disabled in production for security
-- **Asset Caching**: Static assets cached for 1 year
+This ensures:
+- ✅ Single Page Application (SPA) routing works correctly
+- ✅ All routes redirect to `index.html`
+- ✅ Static assets are cached properly
 
 ## Troubleshooting
 
 ### Build Fails
 
-**Issue**: Build fails with module not found errors
-**Solution**: 
-- Ensure all dependencies are in `package.json`
-- Run `npm install` locally to verify
-- Check that all imports use correct paths
+**Error**: "Missing Supabase environment variables"
+- **Solution**: Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Vercel environment variables
 
-### Environment Variables Not Working
+**Error**: "terser not found"
+- **Solution**: Already fixed - using `esbuild` minifier (see `vite.config.ts`)
 
-**Issue**: AI features don't work after deployment
-**Solution**:
-- Verify `VITE_OPENAI_API_KEY` is set in Vercel
-- Environment variable names must start with `VITE_`
-- Redeploy after adding environment variables
+### Runtime Errors
 
-### 404 on Refresh
+**Error**: "Cannot connect to Supabase"
+- **Check**: Environment variables are set correctly
+- **Check**: Supabase project is active
+- **Check**: Network requests are not blocked
 
-**Issue**: Page shows 404 when refreshing on non-root routes
-**Solution**: 
-- Verify `vercel.json` is in the root directory
-- Check that the rewrite rule is present (automatically configured)
+**Error**: "403 Forbidden" when saving data
+- **Check**: RLS policies are set up correctly
+- **Check**: User is authenticated
+- **Check**: Database tables exist
 
-### Images Not Loading
+### Image Upload Issues
 
-**Issue**: Images from assets folder not displaying
-**Solution**:
-- Ensure images are in `src/assets/`
-- Verify image imports in components
-- Check browser console for 404 errors
+**Error**: "Failed to upload image"
+- **Check**: Storage buckets are created
+- **Check**: Storage RLS policies are set up
+- **Check**: Bucket is set to public
+- **Check**: File size is under 2MB
 
-## Performance Tips
+## Post-Deployment Checklist
 
-1. **Image Optimization**: Use WebP format for better compression
-2. **Lazy Loading**: Components are loaded on-demand
-3. **CDN**: Vercel automatically serves assets from their global CDN
-4. **Caching**: Static assets are cached aggressively
-
-## Monitoring
-
-### Analytics
-
-Vercel provides built-in analytics:
-- Go to **Analytics** tab in your project
-- View page views, performance metrics, and errors
-
-### Logs
-
-View deployment and function logs:
-- Go to **Deployments** tab
-- Click on a deployment
-- View **Build Logs** or **Function Logs**
-
-## Cost Considerations
-
-### Vercel
-- **Free Tier**: 100 GB bandwidth, unlimited personal projects
-- **Pro Tier**: $20/month for commercial projects
-
-### OpenAI API
-- **GPT-4o-mini**: $0.150 per 1M input tokens, $0.600 per 1M output tokens
-- Monitor usage at: https://platform.openai.com/usage
-- Set spending limits in OpenAI dashboard
+- [ ] Environment variables are set
+- [ ] Database tables are created
+- [ ] Storage buckets are created
+- [ ] RLS policies are configured
+- [ ] User registration works
+- [ ] User login works
+- [ ] Data saving works
+- [ ] Data loading works
+- [ ] Image uploads work
+- [ ] All routes are accessible
 
 ## Support
 
-For issues or questions:
-- Check the [Vercel Documentation](https://vercel.com/docs)
-- Review [Vite Documentation](https://vitejs.dev/)
-- Open an issue in your repository
-
-## Next Steps
-
-After successful deployment:
-
-1. ✅ Test all features in production
-2. ✅ Configure custom domain (if needed)
-3. ✅ Set up monitoring and alerts
-4. ✅ Share your deployed application
-5. ✅ Consider implementing backend proxy for API security
-
----
-
-**Deployment Date**: Ready for deployment
-**Framework**: Vite + React
-**Hosting**: Vercel
-**Status**: Production Ready ✅
-
+If you encounter issues:
+1. Check Vercel build logs
+2. Check browser console for errors
+3. Verify Supabase dashboard for database/storage status
+4. Review environment variables in Vercel settings

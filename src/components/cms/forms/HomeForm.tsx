@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { useForm } from "react-hook-form@7.55.0";
+import { useForm } from "react-hook-form";
 import { Card, CardContent } from "../../ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../../ui/form";
 import { Input } from "../../ui/input";
@@ -11,15 +11,19 @@ import { FullScreenImagePositioner } from "../FullScreenImagePositioner";
 import { AvatarImagePositioner } from "../AvatarImagePositioner";
 import { BusinessCardData, ProfileImageData } from "../../../types/business-card";
 import { parseProfileImage, calculateAvatarScaleFactor } from "../../../utils/profile-image-utils";
+import { validateBackgroundImage, validateAvatarImage } from "../../../utils/file-utils";
+import { uploadBackgroundImage, uploadAvatarImage, deleteImageFromStorage } from "../../../utils/supabase-storage";
+import { toast } from "sonner";
 const imgImg = "https://images.unsplash.com/photo-1705321963943-de94bb3f0dd3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbnRlcmlvciUyMGRlc2lnbiUyMG1vZGVybiUyMGxpdmluZyUyMHJvb218ZW58MXx8fHwxNzYzNTE3NzEyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral";
 
 interface HomeFormProps {
   data: BusinessCardData['personal'];
   onChange: (data: BusinessCardData['personal']) => void;
   onFieldFocus?: (field: { label: string; value: string; onApply: (value: string) => void }) => void;
+  userCode?: string | null; // User code for organizing image uploads
 }
 
-export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
+export function HomeForm({ data, onChange, onFieldFocus, userCode }: HomeFormProps) {
   const form = useForm({
     defaultValues: data,
     values: data,
@@ -37,6 +41,7 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
     });
   };
 
+
   // Parse background image data
   const backgroundImageData = parseProfileImage(data.profileImage || '');
   const backgroundImageUrl = backgroundImageData?.imageUrl || "";
@@ -48,22 +53,50 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
   const avatarPosition = avatarImageData?.position || { x: 0, y: 0, scale: 1 };
 
   // Background image handlers
-  const handleBackgroundFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBackgroundFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      const newData: ProfileImageData = {
-        imageUrl: dataUrl,
-        position: { x: 0, y: 0, scale: 1 }
-      };
-      handleChange('profileImage', JSON.stringify(newData));
-      // Auto-open positioner after upload
-      setTimeout(() => setShowBackgroundPositioner(true), 100);
+    // Validate file size (5MB for background)
+    const validationError = validateBackgroundImage(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    // Check userCode for organizing uploads
+    if (!userCode) {
+      toast.error('User not authenticated. Please log in.');
+      return;
+    }
+
+    // Upload to Supabase Storage
+    toast.loading('Uploading background image...', { id: 'upload-bg' });
+    
+    const result = await uploadBackgroundImage(file, userCode);
+    
+    if ('error' in result) {
+      toast.error(`Failed to upload image: ${result.error}`, { id: 'upload-bg' });
+      return;
+    }
+
+    // Delete old image if it exists and is from Supabase Storage
+    const currentImageData = parseProfileImage(data.profileImage || '');
+    if (currentImageData?.imageUrl && !currentImageData.imageUrl.startsWith('data:image')) {
+      await deleteImageFromStorage(currentImageData.imageUrl);
+    }
+
+    // Create ProfileImageData with Storage URL
+    const newData: ProfileImageData = {
+      imageUrl: result.url,
+      position: { x: 0, y: 0, scale: 1 }
     };
-    reader.readAsDataURL(file);
+    
+    handleChange('profileImage', JSON.stringify(newData));
+    toast.success('Background image uploaded successfully!', { id: 'upload-bg' });
+    
+    // Auto-open positioner after upload
+    setTimeout(() => setShowBackgroundPositioner(true), 100);
   };
 
   const handleSaveBackgroundPosition = (position: { x: number; y: number; scale: number }) => {
@@ -74,27 +107,64 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
     handleChange('profileImage', JSON.stringify(newData));
   };
 
-  const handleRemoveBackgroundImage = () => {
+  const handleRemoveBackgroundImage = async () => {
+    // Delete from Supabase Storage if it's a Storage URL
+    if (backgroundImageUrl && !backgroundImageUrl.startsWith('data:image')) {
+      const result = await deleteImageFromStorage(backgroundImageUrl);
+      if (!result.success) {
+        console.warn('Failed to delete background image from storage:', result.error);
+        // Continue with clearing data even if deletion fails
+      }
+    }
+    
     handleChange('profileImage', '');
   };
 
   // Avatar image handlers
-  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      const newData: ProfileImageData = {
-        imageUrl: dataUrl,
-        position: { x: 0, y: 0, scale: 1 }
-      };
-      handleChange('avatarImage', JSON.stringify(newData));
-      // Auto-open positioner after upload
-      setTimeout(() => setShowAvatarPositioner(true), 100);
+    // Validate file size (2MB for avatar)
+    const validationError = validateAvatarImage(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    // Check userCode for organizing uploads
+    if (!userCode) {
+      toast.error('User not authenticated. Please log in.');
+      return;
+    }
+
+    // Upload to Supabase Storage
+    toast.loading('Uploading avatar image...', { id: 'upload-avatar' });
+    
+    const result = await uploadAvatarImage(file, userCode);
+    
+    if ('error' in result) {
+      toast.error(`Failed to upload image: ${result.error}`, { id: 'upload-avatar' });
+      return;
+    }
+
+    // Delete old image if it exists and is from Supabase Storage
+    const currentImageData = parseProfileImage(data.avatarImage || '');
+    if (currentImageData?.imageUrl && !currentImageData.imageUrl.startsWith('data:image')) {
+      await deleteImageFromStorage(currentImageData.imageUrl);
+    }
+
+    // Create ProfileImageData with Storage URL
+    const newData: ProfileImageData = {
+      imageUrl: result.url,
+      position: { x: 0, y: 0, scale: 1 }
     };
-    reader.readAsDataURL(file);
+    
+    handleChange('avatarImage', JSON.stringify(newData));
+    toast.success('Avatar image uploaded successfully!', { id: 'upload-avatar' });
+    
+    // Auto-open positioner after upload
+    setTimeout(() => setShowAvatarPositioner(true), 100);
   };
 
   const handleSaveAvatarPosition = (position: { x: number; y: number; scale: number }) => {
@@ -105,7 +175,16 @@ export function HomeForm({ data, onChange, onFieldFocus }: HomeFormProps) {
     handleChange('avatarImage', JSON.stringify(newData));
   };
 
-  const handleRemoveAvatarImage = () => {
+  const handleRemoveAvatarImage = async () => {
+    // Delete from Supabase Storage if it's a Storage URL
+    if (avatarImageUrl && !avatarImageUrl.startsWith('data:image')) {
+      const result = await deleteImageFromStorage(avatarImageUrl);
+      if (!result.success) {
+        console.warn('Failed to delete avatar image from storage:', result.error);
+        // Continue with clearing data even if deletion fails
+      }
+    }
+    
     handleChange('avatarImage', '');
   };
 

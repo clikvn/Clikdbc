@@ -150,43 +150,43 @@ export interface BusinessCardData {
 
 export const defaultBusinessCardData: BusinessCardData = {
   personal: {
-    name: "Christine Nguyen",
-    title: "Interior Designer",
-    businessName: "Design Solutions",
-    bio: "Transforming spaces into works of art. Specializing in modern, minimalist designs that blend functionality with elegance.",
+    name: "",
+    title: "",
+    businessName: "",
+    bio: "",
     profileImage: "", // Background image
     avatarImage: "" // Avatar image
   },
   contact: {
-    phone: { value: "+84 123 456 789", groups: ['Public'] },
-    email: { value: "christine@example.com", groups: ['Public'] },
-    address: { value: "123 Design Street, District 1, Ho Chi Minh City", groups: ['Public'] }
+    phone: { value: "", groups: ['Public'] },
+    email: { value: "", groups: ['Public'] },
+    address: { value: "", groups: ['Public'] }
   },
   socialMessaging: {
     zalo: { username: "", groups: ['Public'] },
-    messenger: { username: "christinenguyen", groups: ['Public'] },
-    telegram: { username: "christinenguyen", groups: ['Public'] },
-    whatsapp: { username: "84123456789", groups: ['Public'] },
-    kakao: { username: "christinenguyen", groups: ['Public'] },
-    discord: { username: "christinenguyen", groups: ['Public'] },
+    messenger: { username: "", groups: ['Public'] },
+    telegram: { username: "", groups: ['Public'] },
+    whatsapp: { username: "", groups: ['Public'] },
+    kakao: { username: "", groups: ['Public'] },
+    discord: { username: "", groups: ['Public'] },
     wechat: { username: "", groups: ['Public'] }
   },
   socialChannels: {
-    facebook: { username: "christinenguyen.interiordesign", groups: ['Public'] },
-    linkedin: { username: "christinenguyen", groups: ['Public', 'Business'] },
-    twitter: { username: "christinenguyen", groups: ['Public'] },
-    youtube: { username: "christinenguyen", groups: ['Public'] },
-    tiktok: { username: "christinenguyen", groups: ['Public'] }
+    facebook: { username: "", groups: ['Public'] },
+    linkedin: { username: "", groups: ['Public'] },
+    twitter: { username: "", groups: ['Public'] },
+    youtube: { username: "", groups: ['Public'] },
+    tiktok: { username: "", groups: ['Public'] }
   },
   portfolioCategories: [],
   portfolio: [],
   profile: {
-    about: { value: "It is my pleasure to assist you with your real estate needs. My number one goal is your complete satisfaction. I would like to take ...", groups: ['Public'] },
-    serviceAreas: { value: "Hanoi • Ha Tay • Hoa Binh • Bac Ninh", groups: ['Public'] },
-    specialties: { value: "Buyer's Agent • Seller's Agent • Resale • Apartment • Townhouse • Land", groups: ['Public'] },
-    experience: { value: "It is my pleasure to assist you with your real estate needs. My number one goal is your complete satisfaction. I would like to take ...", groups: ['Public'] },
-    languages: { value: "Vietnamese • English • Korean", groups: ['Public'] },
-    certifications: { value: "HN-1108", groups: ['Public'] }
+    about: { value: "", groups: ['Public'] },
+    serviceAreas: { value: "", groups: ['Public'] },
+    specialties: { value: "", groups: ['Public'] },
+    experience: { value: "", groups: ['Public'] },
+    languages: { value: "", groups: ['Public'] },
+    certifications: { value: "", groups: ['Public'] }
   }
 };
 

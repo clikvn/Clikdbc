@@ -5,15 +5,34 @@ import { Checkbox } from "../ui/checkbox";
 import { Share2 } from "lucide-react";
 import { useFieldVisibility } from "../../hooks/useFieldVisibility";
 import { getColorClasses } from "../../utils/custom-groups";
+import { VisibilityGroup } from "../../types/business-card";
 import * as LucideIcons from "lucide-react";
 
 interface FieldVisibilityPopoverProps {
   fieldPath: string;
   buttonClassName?: string;
+  onGroupsChange?: (groups: VisibilityGroup[]) => void; // Callback to update field's groups property
+  currentGroups?: VisibilityGroup[]; // Current groups for the field (for contact fields)
 }
 
-export function FieldVisibilityPopover({ fieldPath, buttonClassName = "h-9 px-3" }: FieldVisibilityPopoverProps) {
+export function FieldVisibilityPopover({ 
+  fieldPath, 
+  buttonClassName = "h-9 px-3",
+  onGroupsChange,
+  currentGroups
+}: FieldVisibilityPopoverProps) {
   const { groups, isFieldVisible, toggleField } = useFieldVisibility();
+  
+  // Map custom group ID to VisibilityGroup (capitalize first letter)
+  const mapGroupIdToVisibilityGroup = (groupId: string): VisibilityGroup | null => {
+    const mapping: Record<string, VisibilityGroup> = {
+      'public': 'Public',
+      'private': 'Private',
+      'business': 'Business',
+      'personal': 'Personal'
+    };
+    return mapping[groupId] || null;
+  };
 
   return (
     <Popover>
@@ -42,7 +61,25 @@ export function FieldVisibilityPopover({ fieldPath, buttonClassName = "h-9 px-3"
               >
                 <Checkbox
                   checked={isFieldVisible(fieldPath, group.id)}
-                  onCheckedChange={() => toggleField(fieldPath, group.id)}
+                  onCheckedChange={() => {
+                    // Get current visibility state before toggle
+                    const wasVisible = isFieldVisible(fieldPath, group.id);
+                    
+                    // Toggle in groupShareSettings
+                    toggleField(fieldPath, group.id);
+                    
+                    // Also update the field's groups property if callback is provided (for contact fields)
+                    if (onGroupsChange && currentGroups) {
+                      const visibilityGroup = mapGroupIdToVisibilityGroup(group.id);
+                      if (visibilityGroup) {
+                        // If it was visible, remove it; if it wasn't, add it
+                        const newGroups = wasVisible
+                          ? currentGroups.filter(g => g !== visibilityGroup)
+                          : [...currentGroups.filter(g => g !== visibilityGroup), visibilityGroup]; // Remove duplicates first, then add
+                        onGroupsChange(newGroups);
+                      }
+                    }
+                  }}
                 />
                 <div className="flex items-center gap-2 flex-1">
                   {IconComponent && (

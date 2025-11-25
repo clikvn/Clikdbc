@@ -1,0 +1,138 @@
+-- Create user_contacts table to store contact information
+-- Run this in Supabase SQL Editor: https://app.supabase.com/project/btyjxckmqzqdqurgoojd/editor/sql
+
+-- 1. Create the user_contacts table
+CREATE TABLE IF NOT EXISTS public.user_contacts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_code text NOT NULL UNIQUE,
+  
+  -- Contact Fields
+  phone text,
+  phone_groups jsonb DEFAULT '["Public"]'::jsonb,
+  email text,
+  email_groups jsonb DEFAULT '["Public"]'::jsonb,
+  address text,
+  address_groups jsonb DEFAULT '["Public"]'::jsonb,
+  
+  -- Messaging Apps
+  zalo_username text,
+  zalo_groups jsonb DEFAULT '["Public"]'::jsonb,
+  messenger_username text,
+  messenger_groups jsonb DEFAULT '["Public"]'::jsonb,
+  telegram_username text,
+  telegram_groups jsonb DEFAULT '["Public"]'::jsonb,
+  whatsapp_username text,
+  whatsapp_groups jsonb DEFAULT '["Public"]'::jsonb,
+  kakao_username text,
+  kakao_groups jsonb DEFAULT '["Public"]'::jsonb,
+  discord_username text,
+  discord_groups jsonb DEFAULT '["Public"]'::jsonb,
+  wechat_username text,
+  wechat_groups jsonb DEFAULT '["Public"]'::jsonb,
+  
+  -- Social Channels
+  facebook_username text,
+  facebook_groups jsonb DEFAULT '["Public"]'::jsonb,
+  linkedin_username text,
+  linkedin_groups jsonb DEFAULT '["Public"]'::jsonb,
+  twitter_username text,
+  twitter_groups jsonb DEFAULT '["Public"]'::jsonb,
+  youtube_username text,
+  youtube_groups jsonb DEFAULT '["Public"]'::jsonb,
+  tiktok_username text,
+  tiktok_groups jsonb DEFAULT '["Public"]'::jsonb,
+  
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  
+  CONSTRAINT user_contacts_pkey PRIMARY KEY (id)
+);
+
+-- 2. Create index for faster lookups by user_code
+CREATE INDEX IF NOT EXISTS user_contacts_user_code_idx ON public.user_contacts USING btree (user_code);
+
+-- 3. Enable Row Level Security (RLS)
+ALTER TABLE public.user_contacts ENABLE ROW LEVEL SECURITY;
+
+-- 4. Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to delete their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow public read access to user_contacts" ON public.user_contacts;
+
+-- 5. Create RLS Policies
+
+-- Policy: Allow authenticated users to read their own contact info
+CREATE POLICY "Allow authenticated users to read their own user_contact"
+ON public.user_contacts
+FOR SELECT
+TO authenticated
+USING (
+  user_code = REPLACE(auth.uid()::text, '-', '')
+);
+
+-- Policy: Allow public read access (for viewing profiles)
+CREATE POLICY "Allow public read access to user_contacts"
+ON public.user_contacts
+FOR SELECT
+TO anon, authenticated
+USING (true);
+
+-- Policy: Allow authenticated users to insert their own contact info
+CREATE POLICY "Allow authenticated users to insert their own user_contact"
+ON public.user_contacts
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  user_code = REPLACE(auth.uid()::text, '-', '')
+);
+
+-- Policy: Allow authenticated users to update their own contact info
+CREATE POLICY "Allow authenticated users to update their own user_contact"
+ON public.user_contacts
+FOR UPDATE
+TO authenticated
+USING (
+  user_code = REPLACE(auth.uid()::text, '-', '')
+)
+WITH CHECK (
+  user_code = REPLACE(auth.uid()::text, '-', '')
+);
+
+-- Policy: Allow authenticated users to delete their own contact info
+CREATE POLICY "Allow authenticated users to delete their own user_contact"
+ON public.user_contacts
+FOR DELETE
+TO authenticated
+USING (
+  user_code = REPLACE(auth.uid()::text, '-', '')
+);
+
+-- 6. Create a function to automatically update the updated_at timestamp
+CREATE OR REPLACE FUNCTION public.handle_user_contacts_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. Create a trigger to call the function on update
+DROP TRIGGER IF EXISTS set_user_contacts_updated_at ON public.user_contacts;
+CREATE TRIGGER set_user_contacts_updated_at
+BEFORE UPDATE ON public.user_contacts
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_user_contacts_updated_at();
+
+-- 8. Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON public.user_contacts TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
+-- Success message
+DO $$
+BEGIN
+  RAISE NOTICE 'user_contacts table created successfully!';
+END $$;
+

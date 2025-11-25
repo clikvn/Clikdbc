@@ -1,0 +1,276 @@
+-- ============================================================================
+-- COMPLETE DATABASE SETUP FOR DIGITAL BUSINESS CARD APPLICATION
+-- ============================================================================
+-- Run this entire script in Supabase SQL Editor:
+-- https://app.supabase.com/project/btyjxckmqzqdqurgoojd/editor/sql
+--
+-- This script creates all required tables:
+-- 1. user_infos - User personal information (name, title, business, bio, images)
+-- 2. user_contacts - Contact information (phone, email, address, messaging, social)
+-- 3. user_profiles - Profile information (about, service areas, specialties, etc.)
+-- ============================================================================
+
+-- ============================================================================
+-- 1. CREATE user_infos TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.user_infos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_code text NOT NULL UNIQUE,
+  full_name text,
+  professional_title text,
+  business_name text,
+  bio text,
+  profile_image_url text,
+  profile_image_position jsonb,
+  avatar_image_url text,
+  avatar_image_position jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT user_infos_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS user_infos_user_code_idx ON public.user_infos USING btree (user_code);
+
+ALTER TABLE public.user_infos ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow authenticated users to delete their own user_info" ON public.user_infos;
+DROP POLICY IF EXISTS "Allow public read access to user_infos" ON public.user_infos;
+
+-- Create RLS Policies for user_infos
+CREATE POLICY "Allow authenticated users to read their own user_info"
+ON public.user_infos FOR SELECT TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow public read access to user_infos"
+ON public.user_infos FOR SELECT TO anon, authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert their own user_info"
+ON public.user_infos FOR INSERT TO authenticated
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to update their own user_info"
+ON public.user_infos FOR UPDATE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''))
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to delete their own user_info"
+ON public.user_infos FOR DELETE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION public.handle_user_infos_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_user_infos_updated_at ON public.user_infos;
+CREATE TRIGGER set_user_infos_updated_at
+BEFORE UPDATE ON public.user_infos
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_user_infos_updated_at();
+
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON public.user_infos TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
+-- ============================================================================
+-- 2. CREATE user_contacts TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.user_contacts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_code text NOT NULL UNIQUE,
+  
+  -- Direct Contact Fields
+  phone_value text,
+  phone_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  email_value text,
+  email_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  address_value text,
+  address_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  
+  -- AI Agent Assistant
+  ai_agent_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+
+  -- Social Messaging Apps
+  zalo_username text,
+  zalo_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  messenger_username text,
+  messenger_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  telegram_username text,
+  telegram_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  whatsapp_username text,
+  whatsapp_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  kakao_username text,
+  kakao_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  discord_username text,
+  discord_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  wechat_username text,
+  wechat_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+
+  -- Social Channels
+  facebook_username text,
+  facebook_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  linkedin_username text,
+  linkedin_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  twitter_username text,
+  twitter_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  youtube_username text,
+  youtube_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+  tiktok_username text,
+  tiktok_groups jsonb NOT NULL DEFAULT '["Public"]'::jsonb,
+
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT user_contacts_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS user_contacts_user_code_idx ON public.user_contacts USING btree (user_code);
+
+ALTER TABLE public.user_contacts ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow authenticated users to delete their own user_contact" ON public.user_contacts;
+DROP POLICY IF EXISTS "Allow public read access to user_contacts" ON public.user_contacts;
+
+-- Create RLS Policies for user_contacts
+CREATE POLICY "Allow authenticated users to read their own user_contact"
+ON public.user_contacts FOR SELECT TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow public read access to user_contacts"
+ON public.user_contacts FOR SELECT TO anon, authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert their own user_contact"
+ON public.user_contacts FOR INSERT TO authenticated
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to update their own user_contact"
+ON public.user_contacts FOR UPDATE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''))
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to delete their own user_contact"
+ON public.user_contacts FOR DELETE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION public.handle_user_contacts_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_user_contacts_updated_at ON public.user_contacts;
+CREATE TRIGGER set_user_contacts_updated_at
+BEFORE UPDATE ON public.user_contacts
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_user_contacts_updated_at();
+
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON public.user_contacts TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
+-- ============================================================================
+-- 3. CREATE user_profiles TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_code text NOT NULL UNIQUE,
+  
+  -- Profile Fields
+  about text,
+  about_groups jsonb DEFAULT '["Public"]'::jsonb,
+  service_areas text,
+  service_areas_groups jsonb DEFAULT '["Public"]'::jsonb,
+  specialties text,
+  specialties_groups jsonb DEFAULT '["Public"]'::jsonb,
+  experience text,
+  experience_groups jsonb DEFAULT '["Public"]'::jsonb,
+  languages text,
+  languages_groups jsonb DEFAULT '["Public"]'::jsonb,
+  certifications text,
+  certifications_groups jsonb DEFAULT '["Public"]'::jsonb,
+  
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  
+  CONSTRAINT user_profiles_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS user_profiles_user_code_idx ON public.user_profiles USING btree (user_code);
+
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Allow authenticated users to read their own user_profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to insert their own user_profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to update their own user_profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow authenticated users to delete their own user_profile" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow public read access to user_profiles" ON public.user_profiles;
+
+-- Create RLS Policies for user_profiles
+CREATE POLICY "Allow authenticated users to read their own user_profile"
+ON public.user_profiles FOR SELECT TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow public read access to user_profiles"
+ON public.user_profiles FOR SELECT TO anon, authenticated
+USING (true);
+
+CREATE POLICY "Allow authenticated users to insert their own user_profile"
+ON public.user_profiles FOR INSERT TO authenticated
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to update their own user_profile"
+ON public.user_profiles FOR UPDATE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''))
+WITH CHECK (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+CREATE POLICY "Allow authenticated users to delete their own user_profile"
+ON public.user_profiles FOR DELETE TO authenticated
+USING (user_code = REPLACE(auth.uid()::text, '-', ''));
+
+-- Trigger for updated_at
+CREATE OR REPLACE FUNCTION public.handle_user_profiles_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_user_profiles_updated_at ON public.user_profiles;
+CREATE TRIGGER set_user_profiles_updated_at
+BEFORE UPDATE ON public.user_profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_user_profiles_updated_at();
+
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON public.user_profiles TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
+-- ============================================================================
+-- SUCCESS MESSAGE
+-- ============================================================================
+DO $$
+BEGIN
+  RAISE NOTICE '✅ All tables created successfully!';
+  RAISE NOTICE '✅ Tables: user_infos, user_contacts, user_profiles';
+  RAISE NOTICE '✅ RLS policies configured';
+  RAISE NOTICE '✅ Triggers and indexes created';
+END $$;
+

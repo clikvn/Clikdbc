@@ -24,14 +24,18 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./compone
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "./components/ui/sheet";
 import { CMSDashboard } from "./components/cms/CMSDashboard";
 import { BusinessCardStudio } from "./components/cms/BusinessCardStudio";
-import { loadBusinessCardData, userExists, ensureDefaultUserExists } from "./utils/storage";
+import { loadBusinessCardData, userExists } from "./utils/storage";
 import { loadFilteredBusinessCardData } from "./utils/filtered-data-loader";
 import { BusinessCardData, messagingUrlPatterns, socialChannelUrlPatterns, PortfolioCategory, PortfolioItem } from "./types/business-card";
 import { parseProfileImage, calculateAvatarScaleFactor } from "./utils/profile-image-utils";
 import { calculateBackgroundImagePosition } from "./utils/home-background-positioning";
 import "./utils/openai-test"; // Load OpenAI test utility for console testing
 import "./utils/openai-debug"; // Load OpenAI debug utility for console testing
-import "./utils/openai-status-display"; // Show OpenAI status on page load
+import "./utils/openai-status-display";
+import { useAuth } from "./hooks/useAuth";
+import { AuthForm } from "./components/cms/AuthForm";
+// NOTE: getUserCodeFromUserId removed - using user.id directly as userCode
+// import { getUserCodeFromUserId } from "./utils/user-profile";
 import { AIAssistant } from "./components/cms/AIAssistant";
 import { ConversationThread } from "./components/cms/ConversationThreads";
 import { 
@@ -43,7 +47,7 @@ import {
   setCurrentThreadId 
 } from "./utils/conversation-storage";
 import { copyWithToast } from "./utils/clipboard-utils";
-import { parseProfileUrl, buildProfileUrl, buildCMSUrl, getUserCode } from "./utils/user-code";
+import { parseProfileUrl, buildProfileUrl, buildCMSUrl, buildLoginUrl, buildRegisterUrl, getUserCode } from "./utils/user-code";
 import { useFilteredBusinessCardData } from "./hooks/useFilteredBusinessCardData";
 import { useIsFieldVisible } from "./hooks/useFieldVisibility";
 import { useAnalyticsTracking } from "./hooks/useAnalytics";
@@ -2491,45 +2495,40 @@ export default function App() {
     };
   }, []);
 
-  // Ensure default user exists on app mount
-  useEffect(() => {
-    ensureDefaultUserExists();
-  }, []);
+  // Note: Removed ensureDefaultUserExists() to prevent creating default data
+  // Users should register and create their own data
 
   // Parse route to determine screen and context
   const routeInfo = parseProfileUrl(currentRoute);
   
-  // Redirect root URL or non-existent users to default user (myclik)
+  // Get authentication state early for redirect checks
+  const { user, session, loading: authLoading } = useAuth();
+  const isAuthenticated = !!session && !!user;
+  
+  // Redirect root URL based on authentication status
   useEffect(() => {
-    const DEFAULT_USER = 'myclik';
-    
     // Check if we're at root path
     if (currentRoute === '/') {
-      const path = buildProfileUrl({ userCode: DEFAULT_USER, screen: 'home' });
-      window.history.replaceState({}, '', path);
-      setCurrentRoute(path);
+      if (isAuthenticated) {
+        // User is authenticated - for now, show a success message or redirect
+        // TODO: When user_profiles table is recreated, redirect to profile
+        // For now, redirect to login page (which will detect auth and redirect away)
+        const path = '/login';
+        if (window.location.pathname !== path) {
+          window.history.replaceState({}, '', path);
+          setCurrentRoute(path);
+        }
+      } else {
+        // Not authenticated - redirect to login page
+        const path = '/login';
+        if (window.location.pathname !== path) {
+          window.history.replaceState({}, '', path);
+          setCurrentRoute(path);
+        }
+      }
       return;
     }
-    
-    // Check if user exists (for both CMS and regular routes)
-    if (routeInfo.userCode) {
-      // Check if this user exists in storage
-      if (!userExists(routeInfo.userCode)) {
-        console.log(`[App] User '${routeInfo.userCode}' does not exist, redirecting to default user '${DEFAULT_USER}'`);
-        
-        // Redirect to default user, preserving route type (CMS or regular)
-        let path: string;
-        if (routeInfo.isCMS) {
-          path = buildCMSUrl(DEFAULT_USER);
-        } else {
-          path = buildProfileUrl({ userCode: DEFAULT_USER, screen: routeInfo.screen || 'home' });
-        }
-        
-        window.history.replaceState({}, '', path);
-        setCurrentRoute(path);
-      }
-    }
-  }, [currentRoute, routeInfo.userCode, routeInfo.isCMS, routeInfo.screen]);
+  }, [currentRoute, isAuthenticated]);
   
   // Update currentScreen based on URL when route changes
   useEffect(() => {
@@ -2613,10 +2612,118 @@ export default function App() {
     setIsMenuOpen(false);
   };
 
-  // CMS Route Handling
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // CMS Route Handling - Use Supabase authentication
+  const { signOut } = useAuth();
   const [cmsSection, setCmsSection] = useState<string | null>(routeInfo.cmsSection);
+  const [userCode, setUserCode] = useState<string | null>(null);
+  
+  // Note: user, session, authLoading, and isAuthenticated are already declared above
 
+  // Get userCode for authenticated user - use Supabase UID directly
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      // Use the Supabase auth UID as the userCode
+      // The UID is a UUID like "18ec81f0-d224-4af7-a238-6d91225593c8"
+      // We can use it directly or create a shorter version
+      const uid = user.id;
+      
+      // Option 1: Use full UUID (36 chars with dashes)
+      // setUserCode(uid);
+      
+      // Option 2: Use UUID without dashes (32 chars)
+      // setUserCode(uid.replace(/-/g, ''));
+      
+      // Option 3: Use first 8 characters (shorter, but less unique)
+      // For now, let's use the full UUID without dashes for a cleaner URL
+      setUserCode(uid.replace(/-/g, ''));
+    } else {
+      setUserCode(null);
+    }
+  }, [user, isAuthenticated]);
+  
+  // Verify authenticated user exists in database when app loads
+  useEffect(() => {
+    if (user && isAuthenticated && !authLoading) {
+      const verifyUser = async () => {
+        const { verifyUserExists } = await import('./utils/user-infos-supabase');
+        const exists = await verifyUserExists(user.id);
+        
+        if (!exists) {
+          console.warn('User not found in database, signing out and redirecting to login');
+          toast.error('Your account was not found. Please register again.');
+          // User was deleted from database, sign out and redirect to login
+          await signOut();
+          navigateTo('/login');
+        }
+      };
+      
+      verifyUser();
+    }
+  }, [user, isAuthenticated, authLoading, signOut]);
+  
+  // Verify user exists when viewing a profile URL
+  useEffect(() => {
+    const urlUserCode = routeInfo.userCode;
+    const isViewingOwnProfile = userCode && urlUserCode && userCode === urlUserCode;
+    
+    // Only verify if viewing a profile (not CMS, login, or register)
+    if (urlUserCode && !routeInfo.isCMS && !routeInfo.isLogin && !routeInfo.isRegister && !authLoading) {
+      const verifyProfileUser = async () => {
+        const { userInfoExistsInSupabase } = await import('./utils/user-infos-supabase');
+        const exists = await userInfoExistsInSupabase(urlUserCode);
+        
+        if (!exists) {
+          console.warn('Profile user not found in database:', urlUserCode);
+          // If viewing own profile and user doesn't exist, redirect to login
+          if (isViewingOwnProfile && isAuthenticated) {
+            toast.error('Your account was not found. Please register again.');
+            await signOut();
+            navigateTo('/login');
+          } else {
+            // If viewing someone else's profile and it doesn't exist, show error and redirect
+            toast.error('This profile does not exist.');
+            navigateTo('/login');
+          }
+        }
+      };
+      
+      verifyProfileUser();
+    }
+  }, [routeInfo.userCode, routeInfo.isCMS, routeInfo.isLogin, routeInfo.isRegister, authLoading, userCode, isAuthenticated, signOut, user]);
+  
+  // Load studio data when on CMS route - MUST be outside conditional block
+  useEffect(() => {
+    // Only load if we're on a CMS route
+    if (routeInfo.isCMS && !cmsSection) {
+      const cmsUserCode = routeInfo.userCode;
+      const authenticatedUserCode = userCode || (user ? user.id.replace(/-/g, '') : null);
+      const effectiveUserCode = authenticatedUserCode || cmsUserCode || getUserCode();
+      
+      if (effectiveUserCode) {
+        setStudioLoading(true);
+        loadBusinessCardData(effectiveUserCode).then((data) => {
+          setStudioData(data);
+          setStudioLoading(false);
+        }).catch((error) => {
+          console.error('Error loading studio data:', error);
+          setStudioLoading(false);
+        });
+      }
+    }
+  }, [routeInfo.isCMS, routeInfo.userCode, cmsSection, userCode, user]);
+  
+  // Redirect to profile after authentication (when userCode becomes available)
+  useEffect(() => {
+    if (isAuthenticated && userCode && (routeInfo.isLogin || routeInfo.isRegister)) {
+      // User just logged in/registered, redirect to their profile
+      navigateTo(buildProfileUrl({ userCode: userCode, screen: 'home' }));
+    }
+  }, [isAuthenticated, userCode, routeInfo.isLogin, routeInfo.isRegister]);
+  
+  // Studio data state for CMS overview
+  const [studioData, setStudioData] = useState<BusinessCardData | null>(null);
+  const [studioLoading, setStudioLoading] = useState(false);
+  
   // AI Agent state for business card screens
   const [aiAgentOpen, setAIAgentOpen] = useState(false);
   const [threadsOpen, setThreadsOpen] = useState(false);
@@ -2691,22 +2798,142 @@ export default function App() {
     }
   };
 
+  // Handle login route
+  if (routeInfo.isLogin) {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+            <p className="mt-4 text-[#535146]">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // If already authenticated, redirect away from login page
+    if (isAuthenticated) {
+      // Since tables are dropped, we don't have userCode yet
+      // For now, just redirect to a placeholder or show a message
+      // TODO: Re-enable when user_profiles table is recreated
+      if (userCode) {
+        navigateTo(buildProfileUrl({ userCode: userCode, screen: 'home' }));
+      } else {
+        // User is authenticated but no profile yet - show success message
+        // In a real scenario, we'd redirect to profile setup or dashboard
+        navigateTo('/'); // Redirect to root, which will redirect to login again
+      }
+      return null;
+    }
+
+    return (
+      <AuthForm
+        initialMode="login"
+        onAuthenticated={() => {
+          // After successful login, wait a moment for auth state to update
+          // Then redirect will happen via the useEffect or route check above
+          setTimeout(() => {
+            // Force a page refresh to update auth state
+            window.location.href = '/';
+          }, 500);
+        }}
+      />
+    );
+  }
+
+  // Handle register route
+  if (routeInfo.isRegister) {
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+            <p className="mt-4 text-[#535146]">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // If already authenticated, redirect to profile
+    if (isAuthenticated && userCode) {
+      navigateTo(buildProfileUrl({ userCode: userCode, screen: 'home' }));
+      return null;
+    }
+
+    return (
+      <AuthForm
+        initialMode="register"
+        onAuthenticated={() => {
+          // After successful registration, wait a moment for auth state to update
+          // Then redirect will happen via the useEffect or route check above
+          setTimeout(() => {
+            // Force a page refresh to update auth state
+            window.location.href = '/';
+          }, 500);
+        }}
+      />
+    );
+  }
+
   if (routeInfo.isCMS) {
+    // Show loading state while checking authentication
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+            <p className="mt-4 text-[#535146]">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+      navigateTo('/login');
+      return null;
+    }
+
+    // Check if user owns this CMS (match userCode from URL with authenticated user's userCode)
+    const cmsUserCode = routeInfo.userCode;
+    const authenticatedUserCode = userCode || (user ? getUserCode() : null);
+    
+    // If userCode doesn't match and we have a userCode from profile, redirect
+    if (cmsUserCode && authenticatedUserCode && cmsUserCode !== authenticatedUserCode) {
+      // User trying to access someone else's CMS - redirect to their own
+      const path = buildCMSUrl(authenticatedUserCode);
+      navigateTo(path);
+      return null;
+    }
+
+    // Use authenticated user's userCode, or fallback to URL userCode, or generate one
+    const effectiveUserCode = authenticatedUserCode || cmsUserCode || getUserCode();
+
     // Show Business Card Studio overview if no section is selected
     if (!cmsSection) {
-      const data = loadBusinessCardData(routeInfo.userCode || undefined);
+      if (studioLoading || !studioData) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+              <p className="mt-4 text-[#535146]">Loading...</p>
+            </div>
+          </div>
+        );
+      }
+      
       return (
         <>
           <BusinessCardStudio
             onNavigateToSection={(section) => {
               setCmsSection(section);
-              navigateTo(buildCMSUrl(getUserCode(), section));
+              navigateTo(buildCMSUrl(effectiveUserCode, section));
             }}
             onNavigateHome={navigateToHome}
             onMenuClick={openMenu}
             onAIClick={handleOpenAIAssistant}
-            profileImage={data.personal.profileImage}
-            profileName={data.personal.name}
+            profileImage={studioData.personal.profileImage}
+            profileName={studioData.personal.name}
           />
           <NavigationMenu
             isOpen={isMenuOpen}
@@ -2715,19 +2942,20 @@ export default function App() {
             onNavigateContact={navigateToContact}
             onNavigateProfile={navigateToProfile}
             onNavigatePortfolio={navigateToPortfolio}
-            onNavigateToMyProfile={() => navigateTo(buildCMSUrl(getUserCode()))}
+            onNavigateToMyProfile={() => navigateTo(buildCMSUrl(effectiveUserCode))}
             currentScreen="home"
-            isAuthenticated={true}
-            onLogin={() => navigateTo(buildCMSUrl(getUserCode()))}
-            onLogout={() => {
+            isAuthenticated={isAuthenticated}
+            onLogin={() => navigateTo('/login')}
+            onLogout={async () => {
+              await signOut();
               setCmsSection(null);
-              // Navigate to own profile home, not currently viewed profile
-              const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
+              // Navigate to own profile home
+              const path = buildProfileUrl({ userCode: effectiveUserCode, screen: 'home' });
               navigateTo(path);
             }}
             onNavigateToCMS={(section) => {
               setCmsSection(section);
-              navigateTo(buildCMSUrl(getUserCode(), section));
+              navigateTo(buildCMSUrl(effectiveUserCode, section));
             }}
             cmsSection={null}
             onOpenAIAssistant={handleOpenAIAssistant}
@@ -2741,10 +2969,11 @@ export default function App() {
       <>
         <CMSDashboard
           activeSection={cmsSection}
-          onLogout={() => {
+          onLogout={async () => {
+            await signOut();
             setCmsSection(null);
-            // Navigate to own profile home, not currently viewed profile
-            const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
+            // Navigate to own profile home
+            const path = buildProfileUrl({ userCode: effectiveUserCode, screen: 'home' });
             navigateTo(path);
           }}
           onNavigateHome={navigateToHome}
@@ -2761,15 +2990,16 @@ export default function App() {
           onNavigatePortfolio={navigateToPortfolio}
           onNavigateToMyProfile={() => {
             setCmsSection(null);
-            navigateTo(buildCMSUrl(getUserCode()));
+            navigateTo(buildCMSUrl(effectiveUserCode));
           }}
           currentScreen="home"
-          isAuthenticated={true}
-          onLogin={() => navigateTo(buildCMSUrl(getUserCode()))}
-          onLogout={() => {
+          isAuthenticated={isAuthenticated}
+          onLogin={() => navigateTo(buildLoginUrl(effectiveUserCode))}
+          onLogout={async () => {
+            await signOut();
             setCmsSection(null);
-            // Navigate to own profile home, not currently viewed profile
-            const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
+            // Navigate to own profile home
+            const path = buildProfileUrl({ userCode: effectiveUserCode, screen: 'home' });
             navigateTo(path);
           }}
           onNavigateToCMS={(section) => {
@@ -2780,6 +3010,33 @@ export default function App() {
         />
       </>
     );
+  }
+
+  // Check authentication for profile routes (not CMS, login, or register)
+  // If user is viewing their own profile or the default profile, they must be authenticated
+  if (!routeInfo.isCMS && !routeInfo.isLogin && !routeInfo.isRegister) {
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e9e6dc] to-[#d4cfc0]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#535146] mx-auto"></div>
+            <p className="mt-4 text-[#535146]">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    const urlUserCode = routeInfo.userCode;
+    
+    // Check if viewing own profile (URL userCode matches authenticated userCode)
+    const isViewingOwnProfile = userCode && urlUserCode && userCode === urlUserCode;
+    
+    // If viewing own profile but not authenticated, redirect to login
+    if (isViewingOwnProfile && !isAuthenticated) {
+      navigateTo('/login');
+      return null;
+    }
   }
 
   if (currentScreen === 'contact') {
@@ -2796,7 +3053,7 @@ export default function App() {
           onNavigateToMyProfile={() => navigateTo(buildCMSUrl(getUserCode()))}
           currentScreen={currentScreen}
           isAuthenticated={true}
-          onLogin={() => navigateTo(buildCMSUrl(getUserCode()))}
+          onLogin={() => navigateTo('/login')}
           onLogout={() => {
             setCmsSection(null);
             // Navigate to own profile home, not currently viewed profile
@@ -2982,7 +3239,7 @@ export default function App() {
           onNavigateToMyProfile={() => navigateTo(buildCMSUrl(getUserCode()))}
           currentScreen={currentScreen}
           isAuthenticated={true}
-          onLogin={() => navigateTo(buildCMSUrl(getUserCode()))}
+          onLogin={() => navigateTo('/login')}
           onLogout={() => {
             setCmsSection(null);
             // Navigate to own profile home, not currently viewed profile
@@ -3014,7 +3271,7 @@ export default function App() {
           onNavigateToMyProfile={() => navigateTo(buildCMSUrl(getUserCode()))}
           currentScreen={currentScreen}
           isAuthenticated={true}
-          onLogin={() => navigateTo(buildCMSUrl(getUserCode()))}
+          onLogin={() => navigateTo('/login')}
           onLogout={() => {
             setCmsSection(null);
             // Navigate to own profile home, not currently viewed profile

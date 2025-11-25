@@ -167,7 +167,19 @@ export function ContactForm({
                       className="pl-10 h-9"
                     />
                   </div>
-                  <FieldVisibilityPopover fieldPath="contact.phone" />
+                  <FieldVisibilityPopover 
+                    fieldPath="contact.phone" 
+                    currentGroups={contact.phone.groups}
+                    onGroupsChange={(groups) => {
+                      onContactChange({
+                        ...contact,
+                        phone: {
+                          ...contact.phone,
+                          groups
+                        }
+                      });
+                    }}
+                  />
                 </div>
               </div>
 
@@ -191,7 +203,19 @@ export function ContactForm({
                       className="pl-10 h-9"
                     />
                   </div>
-                  <FieldVisibilityPopover fieldPath="contact.email" />
+                  <FieldVisibilityPopover 
+                    fieldPath="contact.email" 
+                    currentGroups={contact.email.groups}
+                    onGroupsChange={(groups) => {
+                      onContactChange({
+                        ...contact,
+                        email: {
+                          ...contact.email,
+                          groups
+                        }
+                      });
+                    }}
+                  />
                 </div>
               </div>
 
@@ -215,7 +239,20 @@ export function ContactForm({
                       className="pl-10 resize-none overflow-hidden"
                     />
                   </div>
-                  <FieldVisibilityPopover fieldPath="contact.address" buttonClassName="h-9 px-3 mt-0.5" />
+                  <FieldVisibilityPopover 
+                    fieldPath="contact.address" 
+                    buttonClassName="h-9 px-3 mt-0.5"
+                    currentGroups={contact.address.groups}
+                    onGroupsChange={(groups) => {
+                      onContactChange({
+                        ...contact,
+                        address: {
+                          ...contact.address,
+                          groups
+                        }
+                      });
+                    }}
+                  />
                 </div>
               </div>
 
@@ -265,7 +302,19 @@ export function ContactForm({
                       placeholder="your-phone-number"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.zalo" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.zalo" 
+                      currentGroups={messaging.zalo.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          zalo: {
+                            ...messaging.zalo,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://zalo.me/{messaging.zalo.username || 'your-phone-number'}
@@ -282,7 +331,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.messenger" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.messenger" 
+                      currentGroups={messaging.messenger.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          messenger: {
+                            ...messaging.messenger,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://m.me/{messaging.messenger.username || 'username'}
@@ -299,7 +360,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.telegram" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.telegram" 
+                      currentGroups={messaging.telegram.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          telegram: {
+                            ...messaging.telegram,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://t.me/{messaging.telegram.username || 'username'}
@@ -316,7 +389,19 @@ export function ContactForm({
                       placeholder="84123456789"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.whatsapp" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.whatsapp" 
+                      currentGroups={messaging.whatsapp.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          whatsapp: {
+                            ...messaging.whatsapp,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://wa.me/{messaging.whatsapp.username || '84123456789'}
@@ -333,7 +418,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.kakao" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.kakao" 
+                      currentGroups={messaging.kakao.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          kakao: {
+                            ...messaging.kakao,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: kakaotalk://conversations/{messaging.kakao.username || 'username'}
@@ -350,7 +447,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.discord" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.discord" 
+                      currentGroups={messaging.discord.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          discord: {
+                            ...messaging.discord,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://discord.com/users/{messaging.discord.username || 'username'}
@@ -367,7 +476,19 @@ export function ContactForm({
                       placeholder="wechat-id"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialMessaging.wechat" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialMessaging.wechat" 
+                      currentGroups={messaging.wechat.groups}
+                      onGroupsChange={(groups) => {
+                        onMessagingChange({
+                          ...messaging,
+                          wechat: {
+                            ...messaging.wechat,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: weixin://dl/chat?{messaging.wechat.username || 'wechat-id'}
@@ -402,7 +523,19 @@ export function ContactForm({
                       placeholder="yourpage"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialChannels.facebook" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialChannels.facebook" 
+                      currentGroups={channels.facebook.groups}
+                      onGroupsChange={(groups) => {
+                        onChannelsChange({
+                          ...channels,
+                          facebook: {
+                            ...channels.facebook,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://facebook.com/{channels.facebook.username || 'yourpage'}
@@ -419,7 +552,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialChannels.linkedin" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialChannels.linkedin" 
+                      currentGroups={channels.linkedin.groups}
+                      onGroupsChange={(groups) => {
+                        onChannelsChange({
+                          ...channels,
+                          linkedin: {
+                            ...channels.linkedin,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://linkedin.com/in/{channels.linkedin.username || 'username'}
@@ -436,7 +581,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialChannels.twitter" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialChannels.twitter" 
+                      currentGroups={channels.twitter.groups}
+                      onGroupsChange={(groups) => {
+                        onChannelsChange({
+                          ...channels,
+                          twitter: {
+                            ...channels.twitter,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://twitter.com/{channels.twitter.username || 'username'}
@@ -453,7 +610,19 @@ export function ContactForm({
                       placeholder="channel"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialChannels.youtube" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialChannels.youtube" 
+                      currentGroups={channels.youtube.groups}
+                      onGroupsChange={(groups) => {
+                        onChannelsChange({
+                          ...channels,
+                          youtube: {
+                            ...channels.youtube,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://youtube.com/@{channels.youtube.username || 'channel'}
@@ -470,7 +639,19 @@ export function ContactForm({
                       placeholder="username"
                       className="h-9 flex-1"
                     />
-                    <FieldVisibilityPopover fieldPath="socialChannels.tiktok" />
+                    <FieldVisibilityPopover 
+                      fieldPath="socialChannels.tiktok" 
+                      currentGroups={channels.tiktok.groups}
+                      onGroupsChange={(groups) => {
+                        onChannelsChange({
+                          ...channels,
+                          tiktok: {
+                            ...channels.tiktok,
+                            groups
+                          }
+                        });
+                      }}
+                    />
                   </div>
                   <FormDescription className="text-xs">
                     Link: https://tiktok.com/@{channels.tiktok.username || 'username'}
