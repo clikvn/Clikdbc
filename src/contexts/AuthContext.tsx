@@ -93,13 +93,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        return { error };
+        // Provide user-friendly error messages
+        let userMessage = error.message || 'Failed to sign in';
+        
+        // Handle common error cases based on error message or status
+        const errorMessage = (error.message || '').toLowerCase();
+        const errorStatus = error.status;
+        
+        if (errorMessage.includes('invalid login credentials') || 
+            errorMessage.includes('invalid_credentials') ||
+            errorMessage.includes('invalid email or password') ||
+            errorStatus === 400) {
+          userMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (errorMessage.includes('email not confirmed') || 
+                   errorMessage.includes('email_not_confirmed')) {
+          userMessage = 'Please verify your email address before signing in. Check your inbox for the confirmation email.';
+        } else if (errorMessage.includes('user not found') || 
+                   errorMessage.includes('user_not_found')) {
+          userMessage = 'No account found with this email address. Please check your email or sign up for a new account.';
+        } else if (errorMessage.includes('too many requests') || 
+                   errorMessage.includes('rate_limit')) {
+          userMessage = 'Too many login attempts. Please wait a few minutes before trying again.';
+        }
+        
+        // Show toast with user-friendly message
+        toast.error(userMessage);
+        
+        // Return error with user-friendly message
+        return { error: { ...error, message: userMessage } as AuthError };
       }
 
       toast.success('Signed in successfully!');
       return { error: null };
     } catch (error) {
-      return { error: error as AuthError };
+      const errorMessage = 'An unexpected error occurred. Please try again.';
+      toast.error(errorMessage);
+      return { error: { message: errorMessage, status: 500 } as AuthError };
     }
   };
 
@@ -110,6 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         toast.error('Error signing out: ' + error.message);
         return;
       }
+      // Clear any local state if needed
+      setUser(null);
+      setSession(null);
       toast.success('Signed out successfully');
     } catch (error) {
       console.error('Error signing out:', error);

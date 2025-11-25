@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner@2.0.3";
+import { Toaster } from "./components/ui/sonner";
 import { motion } from "motion/react";
 
 // TypeScript declarations for visualViewport API
@@ -1112,6 +1113,35 @@ function Gradient({ onNavigateToContact, onNavigateToProfile, onNavigateToPortfo
           onNavigateToProfile={onNavigateToProfile}
           onNavigateToPortfolio={onNavigateToPortfolio}
         />
+      </div>
+    </div>
+  );
+}
+
+function HomeSetupPromptModal({ onConfirm, onDismiss }: { onConfirm: () => void; onDismiss: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4 text-center">
+        <h2 className="text-2xl font-semibold text-[#0a0a0a]">
+          Complete your Home Profile Card?
+        </h2>
+        <p className="text-sm text-[#535146] leading-relaxed">
+          Do you want to complete your Home Profile Card with a background image and avatar image before continuing?
+        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            onClick={onConfirm}
+            className="w-full rounded-xl bg-[#0a0a0a] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Yes, take me there
+          </button>
+          <button
+            onClick={onDismiss}
+            className="w-full rounded-xl border border-[#d4cfc0] px-4 py-3 text-sm font-semibold text-[#535146] transition hover:bg-[#f4f2ec]"
+          >
+            Dismiss
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2494,6 +2524,35 @@ export default function App() {
       }
     };
   }, []);
+  
+  useEffect(() => {
+    const blurActiveInput = (event: TouchEvent | MouseEvent) => {
+      if (typeof document === 'undefined') return;
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (!activeElement) return;
+      const isTextInput =
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.isContentEditable;
+      if (!isTextInput) return;
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (
+        target.closest('input, textarea, [contenteditable="true"], [data-keep-keyboard], [role="textbox"]')
+      ) {
+        return;
+      }
+      activeElement.blur();
+    };
+
+    document.addEventListener('touchend', blurActiveInput, true);
+    document.addEventListener('mousedown', blurActiveInput, true);
+
+    return () => {
+      document.removeEventListener('touchend', blurActiveInput, true);
+      document.removeEventListener('mousedown', blurActiveInput, true);
+    };
+  }, []);
 
   // Note: Removed ensureDefaultUserExists() to prevent creating default data
   // Users should register and create their own data
@@ -2616,6 +2675,7 @@ export default function App() {
   const { signOut } = useAuth();
   const [cmsSection, setCmsSection] = useState<string | null>(routeInfo.cmsSection);
   const [userCode, setUserCode] = useState<string | null>(null);
+  const [showHomeSetupPrompt, setShowHomeSetupPrompt] = useState(false);
   
   // Note: user, session, authLoading, and isAuthenticated are already declared above
 
@@ -2640,6 +2700,54 @@ export default function App() {
       setUserCode(null);
     }
   }, [user, isAuthenticated]);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (authLoading || !isAuthenticated || !userCode) return;
+    if (routeInfo.isCMS || routeInfo.isLogin || routeInfo.isRegister) return;
+
+    const shouldShowPrompt = sessionStorage.getItem('showHomeSetupPrompt') === 'true';
+    if (!shouldShowPrompt) return;
+
+    const dismissKey = `homeSetupPromptDismissed_${userCode}`;
+    const dismissed = localStorage.getItem(dismissKey) === 'true';
+    if (dismissed) {
+      sessionStorage.removeItem('showHomeSetupPrompt');
+      return;
+    }
+
+    setShowHomeSetupPrompt(true);
+  }, [authLoading, isAuthenticated, userCode, routeInfo.isCMS, routeInfo.isLogin, routeInfo.isRegister]);
+  
+  const dismissHomeSetupPrompt = () => {
+    if (typeof window !== 'undefined' && userCode) {
+      const dismissKey = `homeSetupPromptDismissed_${userCode}`;
+      localStorage.setItem(dismissKey, 'true');
+      sessionStorage.removeItem('showHomeSetupPrompt');
+    }
+    setShowHomeSetupPrompt(false);
+  };
+
+  const handleAcceptHomeSetupPrompt = () => {
+    if (typeof window !== 'undefined' && userCode) {
+      const dismissKey = `homeSetupPromptDismissed_${userCode}`;
+      localStorage.setItem(dismissKey, 'true');
+      sessionStorage.removeItem('showHomeSetupPrompt');
+    }
+    setShowHomeSetupPrompt(false);
+    if (userCode) {
+      setCmsSection('home');
+      const path = buildCMSUrl(userCode, 'home');
+      navigateTo(path);
+    }
+  };
+
+  const homeSetupPrompt = showHomeSetupPrompt ? (
+    <HomeSetupPromptModal
+      onConfirm={handleAcceptHomeSetupPrompt}
+      onDismiss={dismissHomeSetupPrompt}
+    />
+  ) : null;
   
   // Verify authenticated user exists in database when app loads
   useEffect(() => {
@@ -2827,17 +2935,20 @@ export default function App() {
     }
 
     return (
-      <AuthForm
-        initialMode="login"
-        onAuthenticated={() => {
-          // After successful login, wait a moment for auth state to update
-          // Then redirect will happen via the useEffect or route check above
-          setTimeout(() => {
-            // Force a page refresh to update auth state
-            window.location.href = '/';
-          }, 500);
-        }}
-      />
+      <>
+        <AuthForm
+          initialMode="login"
+          onAuthenticated={() => {
+            // After successful login, wait a moment for auth state to update
+            // Then redirect will happen via the useEffect or route check above
+            setTimeout(() => {
+              // Force a page refresh to update auth state
+              window.location.href = '/';
+            }, 500);
+          }}
+        />
+        {homeSetupPrompt}
+      </>
     );
   }
 
@@ -2861,17 +2972,20 @@ export default function App() {
     }
 
     return (
-      <AuthForm
-        initialMode="register"
-        onAuthenticated={() => {
-          // After successful registration, wait a moment for auth state to update
-          // Then redirect will happen via the useEffect or route check above
-          setTimeout(() => {
-            // Force a page refresh to update auth state
-            window.location.href = '/';
-          }, 500);
-        }}
-      />
+      <>
+        <AuthForm
+          initialMode="register"
+          onAuthenticated={() => {
+            // After successful registration, wait a moment for auth state to update
+            // Then redirect will happen via the useEffect or route check above
+            setTimeout(() => {
+              // Force a page refresh to update auth state
+              window.location.href = '/';
+            }, 500);
+          }}
+        />
+        {homeSetupPrompt}
+      </>
     );
   }
 
@@ -2960,6 +3074,7 @@ export default function App() {
             cmsSection={null}
             onOpenAIAssistant={handleOpenAIAssistant}
           />
+          {homeSetupPrompt}
         </>
       );
     }
@@ -2972,9 +3087,8 @@ export default function App() {
           onLogout={async () => {
             await signOut();
             setCmsSection(null);
-            // Navigate to own profile home
-            const path = buildProfileUrl({ userCode: effectiveUserCode, screen: 'home' });
-            navigateTo(path);
+            // Navigate to login page so user can login with different account
+            navigateTo('/login');
           }}
           onNavigateHome={navigateToHome}
           onNavigateToStudio={() => setCmsSection(null)}
@@ -2998,9 +3112,8 @@ export default function App() {
           onLogout={async () => {
             await signOut();
             setCmsSection(null);
-            // Navigate to own profile home
-            const path = buildProfileUrl({ userCode: effectiveUserCode, screen: 'home' });
-            navigateTo(path);
+            // Navigate to login page so user can login with different account
+            navigateTo('/login');
           }}
           onNavigateToCMS={(section) => {
             setCmsSection(section);
@@ -3008,6 +3121,7 @@ export default function App() {
           cmsSection={cmsSection}
           onOpenAIAssistant={handleOpenAIAssistant}
         />
+        {homeSetupPrompt}
       </>
     );
   }
@@ -3054,11 +3168,11 @@ export default function App() {
           currentScreen={currentScreen}
           isAuthenticated={true}
           onLogin={() => navigateTo('/login')}
-          onLogout={() => {
+          onLogout={async () => {
+            await signOut();
             setCmsSection(null);
-            // Navigate to own profile home, not currently viewed profile
-            const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
-            navigateTo(path);
+            // Navigate to login page so user can login with different account
+            navigateTo('/login');
           }}
           onNavigateToCMS={(section) => {
             setCmsSection(section);
@@ -3240,11 +3354,11 @@ export default function App() {
           currentScreen={currentScreen}
           isAuthenticated={true}
           onLogin={() => navigateTo('/login')}
-          onLogout={() => {
+          onLogout={async () => {
+            await signOut();
             setCmsSection(null);
-            // Navigate to own profile home, not currently viewed profile
-            const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
-            navigateTo(path);
+            // Navigate to login page so user can login with different account
+            navigateTo('/login');
           }}
           onNavigateToCMS={(section) => {
             setCmsSection(section);
@@ -3253,6 +3367,7 @@ export default function App() {
           cmsSection={null}
           onOpenAIAssistant={handleOpenAIAssistant}
         />
+        {homeSetupPrompt}
       </>
     );
   }
@@ -3272,11 +3387,11 @@ export default function App() {
           currentScreen={currentScreen}
           isAuthenticated={true}
           onLogin={() => navigateTo('/login')}
-          onLogout={() => {
+          onLogout={async () => {
+            await signOut();
             setCmsSection(null);
-            // Navigate to own profile home, not currently viewed profile
-            const path = buildProfileUrl({ userCode: getUserCode(), screen: 'home' });
-            navigateTo(path);
+            // Navigate to login page so user can login with different account
+            navigateTo('/login');
           }}
           onNavigateToCMS={(section) => {
             setCmsSection(section);
@@ -3285,20 +3400,24 @@ export default function App() {
           cmsSection={null}
           onOpenAIAssistant={handleOpenAIAssistant}
         />
+        {homeSetupPrompt}
       </>
     );
   }
 
   return (
-    <div className="bg-[#c96442] w-full overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-      <div className="relative w-full h-full">
-        <HomeBackgroundImage />
-        <Gradient 
-          onNavigateToContact={navigateToContact} 
-          onNavigateToProfile={navigateToProfile}
-          onNavigateToPortfolio={navigateToPortfolio}
-        />
+    <>
+      <div className="bg-[#c96442] w-full overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+        <div className="relative w-full h-full">
+          <HomeBackgroundImage />
+          <Gradient 
+            onNavigateToContact={navigateToContact} 
+            onNavigateToProfile={navigateToProfile}
+            onNavigateToPortfolio={navigateToPortfolio}
+          />
+        </div>
       </div>
-    </div>
+      {homeSetupPrompt}
+    </>
   );
 }

@@ -27,6 +27,18 @@ export function AuthForm({ onAuthenticated, initialMode = "login" }: AuthFormPro
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const blurActiveInput = () => {
+    if (typeof document === "undefined") return;
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (
+      activeElement &&
+      (activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA" ||
+        activeElement.isContentEditable)
+    ) {
+      activeElement.blur();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,7 +132,11 @@ export function AuthForm({ onAuthenticated, initialMode = "login" }: AuthFormPro
           }
           
           // If session is available (email confirmation disabled), automatically sign in
-          if (signUpData?.session) {
+        if (signUpData?.session) {
+          blurActiveInput();
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("showHomeSetupPrompt", "true");
+          }
             // User is already signed in, call onAuthenticated callback
             toast.success("Account created successfully! You are now signed in.");
             onAuthenticated();
@@ -147,9 +163,15 @@ export function AuthForm({ onAuthenticated, initialMode = "login" }: AuthFormPro
 
       const { error } = await signIn(email, password);
       if (error) {
-        toast.error(error.message || "Failed to sign in");
+        // Error message is already shown in AuthContext.signIn via toast
+        // Just set loading to false and return
         setIsLoading(false);
         return;
+      }
+
+      blurActiveInput();
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("showHomeSetupPrompt", "true");
       }
 
       // On successful login, wait a moment for session to be established

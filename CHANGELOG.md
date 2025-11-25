@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **File Cleanup**: Deleted 9 redundant SQL/COPY files for old dropped tables (`user_home`, old `user_profiles`). Removed old setup scripts and RLS fix scripts that are no longer needed.
+- **Login Error Messages**: Improved error handling for login failures. Now shows user-friendly error messages when authentication fails (invalid credentials, email not confirmed, user not found, etc.). Error messages are displayed via toast notifications.
+- **Home Setup Prompt**: Added a one-time prompt after first login asking users if they want to complete their Home Profile Card (background + avatar). “Yes” navigates directly to `/studio/home`; “Dismiss” hides future prompts for that user.
+- **Mobile Keyboard Handling**: Automatically blurs focused inputs after login/registration actions and when tapping outside of inputs, closing the mobile keyboard when it’s no longer needed.
+
+### Fixed
+- **Login Error Display**: Fixed issue where login errors (400 Bad Request) were not showing user-friendly messages. Now displays clear error messages like "Invalid email or password. Please check your credentials and try again." instead of technical error messages.
+- **Logout Functionality**: Updated logout function to redirect to `/login` page instead of profile home, allowing users to easily switch accounts. Logout now properly clears the session and redirects to login page.
+
+### Changed
+- **Logout Redirect**: Changed logout behavior to redirect to login page (`/login`) instead of profile home page, making it easier for users to switch accounts.
 - **Database Setup**: Created comprehensive `SETUP_ALL_TABLES.sql` and `COPY_SETUP_ALL_TABLES.txt` that sets up all 3 current tables (`user_infos`, `user_contacts`, `user_profiles`) in one script.
 - **Deployment Documentation**: Created `VERCEL_DEPLOYMENT.md`, `DEPLOYMENT_CHECKLIST.md`, and `README_DEPLOYMENT.md` for complete deployment guidance.
 - **Environment Variables**: Updated `env.example` to correctly use anon public key instead of service_role key.
